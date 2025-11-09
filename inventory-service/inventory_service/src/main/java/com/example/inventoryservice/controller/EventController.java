@@ -1,8 +1,10 @@
 package com.example.inventoryservice.controller;
 
+import com.example.inventoryservice.service.InventoryService;
 import com.example.inventoryservice.model.Event;
 import com.example.inventoryservice.repository.EventRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,6 +13,12 @@ import java.util.List;
 @RequestMapping("/api/events")
 @CrossOrigin(origins = "*")
 public class EventController {
+
+    private final InventoryService inventoryService;
+
+    public EventController(InventoryService inventoryService) {
+        this.inventoryService = inventoryService;
+    }
 
     @Autowired
     private EventRepository eventRepository;
@@ -50,14 +58,20 @@ public class EventController {
     }
 
     @PutMapping("/reserve/{eventId}")
-    public Event reserveTicket(@PathVariable Long eventId, @RequestParam(defaultValue = "1") int quantity) {
-        Event event = eventRepository.findById(eventId).orElse(null);
-        if (event != null && event.getAvailableTickets() >= quantity) {
-            event.setAvailableTickets(event.getAvailableTickets() - quantity);
-            return eventRepository.save(event);
+    public ResponseEntity<?> reserveTicket(@PathVariable Long eventId,
+                                           @RequestParam(defaultValue = "1") int quantity) {
+        Event updated = inventoryService.reserveTickets(eventId, quantity);
+
+        if (updated == null) {
+            return ResponseEntity
+                    .badRequest()
+                    .body("Not enough tickets available or event not found.");
         }
-        return null;
+
+        return ResponseEntity.ok(updated);
     }
+
+
 
 
 }
