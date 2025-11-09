@@ -70,6 +70,19 @@ public class EventController {
 
         return ResponseEntity.ok(updated);
     }
+    @PutMapping("/release/{eventId}")
+    public ResponseEntity<?> releaseTickets(@PathVariable Long eventId,
+                                            @RequestParam(defaultValue = "1") int quantity) {
+        Event updated = inventoryService.releaseTickets(eventId, quantity);
+
+        if (updated == null) {
+            return ResponseEntity
+                    .badRequest()
+                    .body("Event not found.");
+        }
+
+        return ResponseEntity.ok(updated);
+    }
 
 
 
