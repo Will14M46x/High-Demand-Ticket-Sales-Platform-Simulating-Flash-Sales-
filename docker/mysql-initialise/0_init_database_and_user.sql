@@ -1,0 +1,8 @@
+CREATE DATABASE IF NOT EXISTS ticketing_db
+       CHARACTER SET utf8mb4
+       COLLATE utf8mb4_0900_ai_ci;
+CREATE USER IF NOT EXISTS 'ticketing_svc'@'%' IDENTIFIED BY 'devpass';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES, EXECUTE
+      ON ticketing_db.* TO 'ticketing_db'@'%';
+
+FLUSH PRIVILEGES
