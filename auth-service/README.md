@@ -87,7 +87,40 @@ openssl rand -base64 32
 
 # Or use a UUID
 uuidgen
+
+# Generate a secure database password
+openssl rand -base64 24
 ```
+
+### Database Security Best Practices
+
+**Create Dedicated Database User (Recommended for Production):**
+
+```sql
+-- Connect to MySQL as root
+mysql -u root -p
+
+-- Create dedicated user for auth service
+CREATE USER 'auth_service_user'@'localhost' IDENTIFIED BY 'your-secure-password';
+
+-- Grant only required privileges
+GRANT SELECT, INSERT, UPDATE, DELETE ON ticket_auth_db.* TO 'auth_service_user'@'localhost';
+
+-- For production, limit to specific host
+CREATE USER 'auth_service_user'@'your-app-server-ip' IDENTIFIED BY 'your-secure-password';
+GRANT SELECT, INSERT, UPDATE, DELETE ON ticket_auth_db.* TO 'auth_service_user'@'your-app-server-ip';
+
+-- Flush privileges
+FLUSH PRIVILEGES;
+```
+
+**Environment Configuration:**
+```bash
+export DB_USERNAME=auth_service_user
+export DB_PASSWORD=your-secure-generated-password
+```
+
+⚠️ **NEVER use root credentials for application database access in production!**
 
 ## Build and Run
 
@@ -378,22 +411,45 @@ curl -X POST http://localhost:8081/api/auth/login \
 - Example: `https://yourdomain.com,https://www.yourdomain.com`
 
 ### Production Security Checklist
+
+**Secrets Management:**
 - [ ] **Generate and set unique JWT secret via `JWT_SECRET` environment variable (CRITICAL)**
   - Use `openssl rand -base64 32` to generate
   - Minimum 256 bits (32+ characters)
   - NEVER commit to version control
 - [ ] **Set Firebase Web API Key via `FIREBASE_WEB_API_KEY` environment variable (CRITICAL)**
+- [ ] **Set database credentials via environment variables (CRITICAL)**
+  - `DB_USERNAME` and `DB_PASSWORD`
+  - NEVER use default credentials (root/root) in production
+  - Create dedicated database user with minimal privileges
+- [ ] Use a secure secret management system (AWS Secrets Manager, HashiCorp Vault, etc.)
+- [ ] Rotate secrets regularly (recommended: JWT every 90 days, DB passwords every 180 days)
+
+**Network & Access Control:**
 - [ ] Configure specific CORS origins (no wildcards)
-- [ ] Enable HTTPS
+  - Set via `CORS_ALLOWED_ORIGINS` environment variable
+  - Example: `https://yourdomain.com,https://www.yourdomain.com`
+- [ ] Enable HTTPS/TLS for all connections
 - [ ] Set `cors.allow-credentials=true` only if needed with specific origins
-- [ ] Use environment variables for all sensitive data (database credentials, API keys)
+- [ ] Configure database to only accept connections from application server IPs
+
+**Firebase Configuration:**
 - [ ] Enable Firebase in production (`FIREBASE_ENABLED=true`)
 - [ ] Provide Firebase service account JSON file path (`FIREBASE_CONFIG_PATH`)
-- [ ] Set secure cookie flags (`http-only`, `secure`)
-- [ ] Review and update allowed methods and headers
+- [ ] Ensure Firebase service account has minimal required permissions
 - [ ] Prefer `/api/auth/verify-firebase-token` over `/api/auth/login` for production OAuth2 flow
-- [ ] Rotate JWT secrets regularly (recommended: every 90 days)
-- [ ] Use a secure secret management system (AWS Secrets Manager, HashiCorp Vault, etc.)
+
+**Application Security:**
+- [ ] Set secure cookie flags (`http-only`, `secure`)
+- [ ] Review and update allowed HTTP methods and headers
+- [ ] Enable database connection pooling with reasonable limits
+- [ ] Configure appropriate JPA hibernate.ddl-auto (use `validate` in production, not `update`)
+- [ ] Set up database backups and disaster recovery procedures
+
+**Code Quality:**
+- [ ] All resources (FileInputStream, database connections) properly closed with try-with-resources
+- [ ] No hardcoded credentials anywhere in codebase
+- [ ] Security warnings reviewed and addressed at startup
 
 ## Configuration
 
