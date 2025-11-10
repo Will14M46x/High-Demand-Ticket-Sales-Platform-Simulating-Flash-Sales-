@@ -36,10 +36,12 @@ public class FirebaseConfig {
                 FirebaseOptions options;
                 
                 if (firebaseConfigPath != null && !firebaseConfigPath.isEmpty()) {
-                    FileInputStream serviceAccount = new FileInputStream(firebaseConfigPath);
-                    options = FirebaseOptions.builder()
-                        .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                        .build();
+                    // Use try-with-resources to ensure FileInputStream is always closed
+                    try (FileInputStream serviceAccount = new FileInputStream(firebaseConfigPath)) {
+                        options = FirebaseOptions.builder()
+                            .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                            .build();
+                    }
                 } else {
                     // Use default credentials (for cloud deployment)
                     options = FirebaseOptions.builder()
