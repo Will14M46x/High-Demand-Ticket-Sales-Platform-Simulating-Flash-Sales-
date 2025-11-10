@@ -50,21 +50,59 @@ public class HoldService {
      */
     public TicketHold getHold(String holdId) {
         String key = HOLD_KEY_PREFIX + holdId;
+        System.out.println("🔍 DEBUG: Looking for hold with key: " + key);
+
         Object value = redisTemplate.opsForValue().get(key);
-        
+        System.out.println("🔍 DEBUG: Retrieved value from Redis: " + value);
+        System.out.println("🔍 DEBUG: Value type: " + (value != null ? value.getClass().getName() : "null"));
+
+        if (value == null) {
+            System.out.println("❌ DEBUG: No value found in Redis!");
+            return null;
+        }
+
+        TicketHold hold = null;
+
+        // Handle both TicketHold object and LinkedHashMap (from Redis deserialization)
         if (value instanceof TicketHold) {
-            TicketHold hold = (TicketHold) value;
-            
+            hold = (TicketHold) value;
+            System.out.println("✅ DEBUG: Value is already a TicketHold object");
+        } else if (value instanceof java.util.Map) {
+            // Redis returned a Map - need to convert it to TicketHold
+            System.out.println("🔄 DEBUG: Converting Map to TicketHold");
+            java.util.Map<String, Object> map = (java.util.Map<String, Object>) value;
+
+            hold = TicketHold.builder()
+                    .holdId((String) map.get("holdId"))
+                    .eventId(((Number) map.get("eventId")).longValue())
+                    .userId(((Number) map.get("userId")).longValue())
+                    .quantity(((Number) map.get("quantity")).intValue())
+                    .totalPrice(((Number) map.get("totalPrice")).doubleValue())
+                    .createdAt(LocalDateTime.parse((String) map.get("createdAt")))
+                    .expiresAt(LocalDateTime.parse((String) map.get("expiresAt")))
+                    .isActive((Boolean) map.get("active"))
+                    .build();
+            System.out.println("✅ DEBUG: Successfully converted to TicketHold");
+        }
+
+        if (hold != null) {
+            System.out.println("🔍 DEBUG: Hold found! ExpiresAt: " + hold.getExpiresAt());
+            System.out.println("🔍 DEBUG: Current time: " + LocalDateTime.now());
+            System.out.println("🔍 DEBUG: Is active: " + hold.isActive());
+
             // Check if hold is still valid
             if (hold.getExpiresAt().isAfter(LocalDateTime.now())) {
+                System.out.println("✅ DEBUG: Hold is valid!");
                 return hold;
             } else {
                 // Hold expired, mark as inactive
+                System.out.println("❌ DEBUG: Hold has expired!");
                 hold.setActive(false);
                 return hold;
             }
         }
-        
+
+        System.out.println("❌ DEBUG: Could not process hold!");
         return null;
     }
 
@@ -92,8 +130,8 @@ public class HoldService {
         if (hold != null && hold.isActive()) {
             hold.setExpiresAt(hold.getExpiresAt().plusMinutes(additionalMinutes));
             String key = HOLD_KEY_PREFIX + holdId;
-            redisTemplate.opsForValue().set(key, hold, 
-                HOLD_DURATION_MINUTES + additionalMinutes, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(key, hold,
+                    HOLD_DURATION_MINUTES + additionalMinutes, TimeUnit.MINUTES);
             return true;
         }
         return false;

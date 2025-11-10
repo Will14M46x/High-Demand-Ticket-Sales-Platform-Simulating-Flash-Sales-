@@ -39,8 +39,9 @@ public class InventoryServiceClient {
                     .fromHttpUrl(inventoryServiceUrl + "/api/events/reserve/" + eventId)
                     .queryParam("quantity", quantity)
                     .toUriString();
-            
-            return restTemplate.getForObject(url, EventDTO.class);
+
+            restTemplate.put(url, null);
+            return getEvent(eventId);
         } catch (Exception e) {
             throw new RuntimeException("Failed to reserve tickets: " + e.getMessage());
         }
