@@ -55,6 +55,12 @@ public class AuthService {
                     request.getPassword(),
                     request.getName()
                 );
+                
+                // Check if Firebase user creation was successful
+                if (firebaseUser == null) {
+                    throw new RuntimeException("Failed to create user in Firebase: Firebase returned null");
+                }
+                
                 firebaseUid = firebaseUser.getUid();
             } else {
                 // Mock Firebase UID for testing
@@ -127,19 +133,32 @@ public class AuthService {
         try {
             FirebaseToken decodedToken = firebaseService.verifyToken(request.getFirebaseToken());
             
-            if (decodedToken == null && !firebaseEnabled) {
-                throw new InvalidCredentialsException("Firebase is disabled");
+            // Check for null token before accessing its methods
+            if (decodedToken == null) {
+                if (!firebaseEnabled) {
+                    throw new InvalidCredentialsException("Firebase is disabled");
+                } else {
+                    throw new InvalidCredentialsException("Invalid or expired Firebase token");
+                }
             }
             
             String email = decodedToken.getEmail();
             String firebaseUid = decodedToken.getUid();
+            
+            // Validate required token fields
+            if (email == null || email.trim().isEmpty()) {
+                throw new InvalidCredentialsException("Firebase token does not contain email");
+            }
+            if (firebaseUid == null || firebaseUid.trim().isEmpty()) {
+                throw new InvalidCredentialsException("Firebase token does not contain UID");
+            }
             
             // Find or create user in database
             User user = userRepository.findByFirebaseUid(firebaseUid)
                 .orElseGet(() -> {
                     User newUser = new User();
                     newUser.setEmail(email);
-                    newUser.setName(decodedToken.getName());
+                    newUser.setName(decodedToken.getName() != null ? decodedToken.getName() : "Unknown");
                     newUser.setFirebaseUid(firebaseUid);
                     newUser.setProvider("firebase");
                     newUser.setIsActive(true);
