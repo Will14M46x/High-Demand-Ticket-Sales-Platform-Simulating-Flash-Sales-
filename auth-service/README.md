@@ -67,13 +67,27 @@ mvn spring-boot:run
 
 For production with Firebase:
 
-1. Get service account JSON from [Firebase Console](https://console.firebase.google.com/)
-2. Save as `firebase-service-account.json` in `src/main/resources/`
-3. Update `application.properties`:
+1. **Get Firebase Service Account JSON:**
+   - Go to [Firebase Console](https://console.firebase.google.com/) > Project Settings > Service Accounts
+   - Click "Generate New Private Key"
+   - Save as `firebase-service-account.json` in `src/main/resources/`
+
+2. **Get Firebase Web API Key (CRITICAL for password verification):**
+   - Go to [Firebase Console](https://console.firebase.google.com/) > Project Settings > General
+   - Copy the "Web API Key" under "Your apps" section
+   
+3. **Update `application.properties`:**
 ```properties
 firebase.enabled=true
 firebase.config.path=classpath:firebase-service-account.json
+firebase.api.key=YOUR_FIREBASE_WEB_API_KEY
 ```
+
+⚠️ **SECURITY NOTE:** The `firebase.api.key` is **REQUIRED** for the `/api/auth/login` endpoint to verify passwords. Without this, the login endpoint would have a critical security vulnerability where anyone could login as any user with just their email.
+
+**Recommended Authentication Flow:**
+- **For Production:** Use `/api/auth/verify-firebase-token` (client authenticates with Firebase, sends token to backend)
+- **For Development/Testing:** Use `/api/auth/login` with `firebase.enabled=false` (disables password verification - INSECURE)
 
 Service runs on `http://localhost:8081`
 
@@ -281,8 +295,16 @@ curl -X POST http://localhost:8081/api/auth/login \
 ### Authentication & Authorization
 - JWT-based stateless authentication
 - Passwords handled by Firebase Authentication
+- **Password verification via Firebase REST API** - ensures no user can login without valid credentials
 - JWT tokens expire after 24 hours (configurable)
 - Spring Security protection on all endpoints
+
+### Password Verification
+**Login Security:**
+- The `/api/auth/login` endpoint verifies passwords using Firebase Authentication REST API
+- Requires `firebase.api.key` to be configured when `firebase.enabled=true`
+- Without proper configuration, the service will reject login attempts to prevent security vulnerabilities
+- In development mode (`firebase.enabled=false`), password verification is bypassed (INSECURE - testing only)
 
 ### CORS Configuration
 **Development:**
@@ -297,13 +319,16 @@ curl -X POST http://localhost:8081/api/auth/login \
 
 ### Production Security Checklist
 - [ ] Set unique JWT secret via `JWT_SECRET` environment variable
+- [ ] **Set Firebase Web API Key via `FIREBASE_WEB_API_KEY` environment variable (CRITICAL)**
 - [ ] Configure specific CORS origins (no wildcards)
 - [ ] Enable HTTPS
 - [ ] Set `cors.allow-credentials=true` only if needed with specific origins
 - [ ] Use environment variables for all sensitive data
 - [ ] Enable Firebase in production (`firebase.enabled=true`)
+- [ ] Provide Firebase service account JSON file path
 - [ ] Set secure cookie flags (`http-only`, `secure`)
 - [ ] Review and update allowed methods and headers
+- [ ] Prefer `/api/auth/verify-firebase-token` over `/api/auth/login` for production OAuth2 flow
 
 ## Configuration
 
