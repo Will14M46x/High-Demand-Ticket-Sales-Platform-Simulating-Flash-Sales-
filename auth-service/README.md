@@ -278,11 +278,32 @@ curl -X POST http://localhost:8081/api/auth/login \
 
 ## Security
 
-- Change JWT secret in production (use environment variables)
-- Use HTTPS in production
+### Authentication & Authorization
+- JWT-based stateless authentication
 - Passwords handled by Firebase Authentication
-- JWT tokens expire after 24 hours
-- Configure CORS for production environment
+- JWT tokens expire after 24 hours (configurable)
+- Spring Security protection on all endpoints
+
+### CORS Configuration
+**Development:**
+- Configured for localhost origins (ports 3000, 8080, 4200)
+- Suitable for local testing
+
+**Production:**
+- ⚠️ **CRITICAL**: MUST specify exact allowed origins
+- Never use wildcard (*) in production
+- Set via environment variables: `CORS_ALLOWED_ORIGINS`
+- Example: `https://yourdomain.com,https://www.yourdomain.com`
+
+### Production Security Checklist
+- [ ] Set unique JWT secret via `JWT_SECRET` environment variable
+- [ ] Configure specific CORS origins (no wildcards)
+- [ ] Enable HTTPS
+- [ ] Set `cors.allow-credentials=true` only if needed with specific origins
+- [ ] Use environment variables for all sensitive data
+- [ ] Enable Firebase in production (`firebase.enabled=true`)
+- [ ] Set secure cookie flags (`http-only`, `secure`)
+- [ ] Review and update allowed methods and headers
 
 ## Configuration
 
@@ -303,6 +324,34 @@ jwt.expiration=86400000
 
 # Firebase
 firebase.enabled=false
+
+# CORS (Development)
+cors.allowed-origins=http://localhost:3000,http://localhost:8080
+cors.allowed-methods=GET,POST,PUT,DELETE,OPTIONS
+cors.allowed-headers=*
+cors.allow-credentials=false
+cors.max-age=3600
+```
+
+### Environment-Specific Profiles
+
+**Development** (`application.properties`):
+- Permissive CORS for local development
+- Multiple localhost ports allowed
+- H2 database option
+
+**Production** (`application-prod.properties`):
+- **MUST** specify exact allowed origins (NO wildcards)
+- Use environment variables for sensitive data
+- Strict CORS configuration
+- HTTPS-only cookies
+
+**Example Production Environment Variables:**
+```bash
+export CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://api.yourdomain.com
+export JWT_SECRET=your-production-secret-key
+export DB_PASSWORD=your-database-password
+export FIREBASE_ENABLED=true
 ```
 
 ## Project Information
