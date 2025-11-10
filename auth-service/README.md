@@ -29,6 +29,66 @@ Authentication microservice for the High-Demand Ticket Sales Platform. Handles u
 - MySQL database (or use H2 for testing)
 - (Optional) Firebase project for production
 
+## Environment Configuration
+
+### 🔒 Security: Never Commit Secrets!
+
+All sensitive configuration values **MUST** be provided via environment variables. Never commit secrets to version control!
+
+### Required Environment Variables
+
+1. **Copy the example file:**
+```bash
+cp env.example .env
+```
+
+2. **Set required variables:**
+
+**For Local Development/Testing:**
+```bash
+# JWT Configuration (REQUIRED)
+export JWT_SECRET=$(openssl rand -base64 32)  # Generate a strong secret
+export JWT_EXPIRATION=86400000
+
+# Spring Profile
+export SPRING_PROFILES_ACTIVE=test  # Use H2 database, no Firebase needed
+```
+
+**For Production:**
+```bash
+# JWT Configuration (REQUIRED - use strong secret!)
+export JWT_SECRET=your-super-secure-jwt-secret-here-minimum-256-bits
+export JWT_EXPIRATION=86400000
+
+# Firebase Configuration (REQUIRED)
+export FIREBASE_ENABLED=true
+export FIREBASE_CONFIG_PATH=/path/to/firebase-service-account.json
+export FIREBASE_WEB_API_KEY=your-firebase-web-api-key
+
+# Database Configuration
+export DB_URL=jdbc:mysql://localhost:3306/ticket_auth_db
+export DB_USERNAME=root
+export DB_PASSWORD=your-database-password
+
+# CORS Configuration (use your actual domain!)
+export CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+
+# Spring Profile
+export SPRING_PROFILES_ACTIVE=prod
+```
+
+⚠️ **WARNING:** The configuration files contain fallback values clearly marked as `INSECURE` or `TEST-ONLY`. These are for local development/testing **ONLY** and will log security warnings. Production deployments **MUST** set the `JWT_SECRET` environment variable.
+
+### Generating Secure Secrets
+
+```bash
+# Generate a secure JWT secret (recommended)
+openssl rand -base64 32
+
+# Or use a UUID
+uuidgen
+```
+
 ## Build and Run
 
 ### Quick Start (Testing with H2)
@@ -318,45 +378,65 @@ curl -X POST http://localhost:8081/api/auth/login \
 - Example: `https://yourdomain.com,https://www.yourdomain.com`
 
 ### Production Security Checklist
-- [ ] Set unique JWT secret via `JWT_SECRET` environment variable
+- [ ] **Generate and set unique JWT secret via `JWT_SECRET` environment variable (CRITICAL)**
+  - Use `openssl rand -base64 32` to generate
+  - Minimum 256 bits (32+ characters)
+  - NEVER commit to version control
 - [ ] **Set Firebase Web API Key via `FIREBASE_WEB_API_KEY` environment variable (CRITICAL)**
 - [ ] Configure specific CORS origins (no wildcards)
 - [ ] Enable HTTPS
 - [ ] Set `cors.allow-credentials=true` only if needed with specific origins
-- [ ] Use environment variables for all sensitive data
-- [ ] Enable Firebase in production (`firebase.enabled=true`)
-- [ ] Provide Firebase service account JSON file path
+- [ ] Use environment variables for all sensitive data (database credentials, API keys)
+- [ ] Enable Firebase in production (`FIREBASE_ENABLED=true`)
+- [ ] Provide Firebase service account JSON file path (`FIREBASE_CONFIG_PATH`)
 - [ ] Set secure cookie flags (`http-only`, `secure`)
 - [ ] Review and update allowed methods and headers
 - [ ] Prefer `/api/auth/verify-firebase-token` over `/api/auth/login` for production OAuth2 flow
+- [ ] Rotate JWT secrets regularly (recommended: every 90 days)
+- [ ] Use a secure secret management system (AWS Secrets Manager, HashiCorp Vault, etc.)
 
 ## Configuration
 
-Key settings in `application.properties`:
+### Environment Variable Usage
+
+All sensitive configuration is externalized via environment variables. See `env.example` for a complete list.
+
+**Configuration files use environment variables with fallbacks:**
 
 ```properties
-# Server
-server.port=8081
+# JWT Configuration
+# Reads from JWT_SECRET env var, falls back to INSECURE value for local dev
+jwt.secret=${JWT_SECRET:INSECURE-LOCAL-DEV-SECRET-CHANGE-ME...}
+jwt.expiration=${JWT_EXPIRATION:86400000}
 
-# Database
-spring.datasource.url=jdbc:mysql://localhost:3306/ticket_auth_db
-spring.datasource.username=root
-spring.datasource.password=root
+# Firebase Configuration
+firebase.enabled=${FIREBASE_ENABLED:false}
+firebase.config.path=${FIREBASE_CONFIG_PATH:}
+firebase.api.key=${FIREBASE_WEB_API_KEY:}
 
-# JWT
-jwt.secret=<your-secret-key>
-jwt.expiration=86400000
+# Database Configuration (Production profile)
+spring.datasource.url=${DB_URL:jdbc:mysql://localhost:3306/ticket_auth_db}
+spring.datasource.username=${DB_USERNAME:root}
+spring.datasource.password=${DB_PASSWORD}
 
-# Firebase
-firebase.enabled=false
-
-# CORS (Development)
-cors.allowed-origins=http://localhost:3000,http://localhost:8080
-cors.allowed-methods=GET,POST,PUT,DELETE,OPTIONS
-cors.allowed-headers=*
-cors.allow-credentials=false
-cors.max-age=3600
+# CORS Configuration
+cors.allowed-origins=${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080}
+cors.allowed-methods=${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS}
 ```
+
+### Profile-Specific Configuration
+
+**`test` profile** (`application-test.properties`):
+- Uses H2 in-memory database
+- Firebase disabled
+- Test-only JWT secret with clear warning
+- Permissive CORS for local testing
+
+**`prod` profile** (`application-prod.properties`):
+- **REQUIRES** environment variables for all secrets (no fallbacks)
+- MySQL database
+- Firebase enabled
+- Strict CORS configuration
 
 ### Environment-Specific Profiles
 
