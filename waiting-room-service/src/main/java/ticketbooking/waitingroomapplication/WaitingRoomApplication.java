@@ -1,12 +1,11 @@
-package waitingroomapplications.service;
+package ticketbooking.waitingroomapplication;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class WaitingRoomServiceApplication {
-
+public class WaitingRoomApplication {
     public static void main(String[] args) {
-        SpringApplication.run(WaitingRoomServiceApplication.class, args);
+        SpringApplication.run(WaitingRoomApplication.class, args);
     }
 }
