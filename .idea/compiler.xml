@@ -2,7 +2,19 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <annotationProcessing>
+      <!-- Default Profile -->
       <profile default="true" name="Default" enabled="true" />
+
+      <!-- Gradle Imported Profile -->
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.42/8365263844ebb62398e0dc33057ba10ba472d3b8/lombok-1.18.42.jar" />
+        </processorPath>
+        <module name="inventoryservice.main" />
+      </profile>
+
+      <!-- Maven Default Profile -->
       <profile name="Maven default annotation processors profile" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
@@ -10,9 +22,30 @@
         <module name="waiting-room-service" />
       </profile>
     </annotationProcessing>
+
+    <bytecodeTargetLevel>
+      <module name="Configuration" target="17" />
+    </bytecodeTargetLevel>
   </component>
+
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <!-- Configuration Modules -->
+      <module name="Configuration" options="-parameters" />
+      <module name="Configuration.main" options="-parameters" />
+      <module name="Configuration.test" options="-parameters" />
+
+      <!-- Booking Service Modules -->
+      <module name="bookingservice" options="-parameters" />
+      <module name="bookingservice.main" options="-parameters" />
+      <module name="bookingservice.test" options="-parameters" />
+
+      <!-- Inventory Service Modules -->
+      <module name="inventoryservice" options="-parameters" />
+      <module name="inventoryservice.main" options="-parameters" />
+      <module name="inventoryservice.test" options="-parameters" />
+
+      <!-- Waiting Room Service Module -->
       <module name="waiting-room-service" options="-parameters" />
     </option>
   </component>
