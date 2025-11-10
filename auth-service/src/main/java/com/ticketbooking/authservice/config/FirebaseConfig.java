@@ -9,19 +9,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 @Configuration
 public class FirebaseConfig {
     
     private static final Logger logger = LoggerFactory.getLogger(FirebaseConfig.class);
-    
-    @Autowired
-    private ResourceLoader resourceLoader;
     
     @Value("${firebase.config.path:}")
     private String firebaseConfigPath;
@@ -41,23 +36,11 @@ public class FirebaseConfig {
                 FirebaseOptions options;
                 
                 if (firebaseConfigPath != null && !firebaseConfigPath.isEmpty()) {
-                    logger.info("Loading Firebase config from: {}", firebaseConfigPath);
-                    
-                    // Use ResourceLoader to handle classpath: prefix properly
-                    Resource resource = resourceLoader.getResource(firebaseConfigPath);
-                    
-                    if (!resource.exists()) {
-                        throw new IOException("Firebase config file not found: " + firebaseConfigPath);
-                    }
-                    
-                    // Use try-with-resources to ensure InputStream is always closed
-                    try (InputStream serviceAccount = resource.getInputStream()) {
-                        options = FirebaseOptions.builder()
-                            .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                            .build();
-                    }
+                    FileInputStream serviceAccount = new FileInputStream(firebaseConfigPath);
+                    options = FirebaseOptions.builder()
+                        .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                        .build();
                 } else {
-                    logger.info("No Firebase config path specified, using application default credentials");
                     // Use default credentials (for cloud deployment)
                     options = FirebaseOptions.builder()
                         .setCredentials(GoogleCredentials.getApplicationDefault())
@@ -65,15 +48,14 @@ public class FirebaseConfig {
                 }
                 
                 FirebaseApp app = FirebaseApp.initializeApp(options);
-                logger.info("✅ Firebase initialized successfully!");
+                logger.info("Firebase initialized successfully");
                 return app;
             } catch (Exception e) {
-                logger.error("❌ Failed to initialize Firebase: {}", e.getMessage(), e);
+                logger.error("Failed to initialize Firebase: {}", e.getMessage());
                 logger.warn("Firebase authentication will not be available");
                 return null;
             }
         }
-        logger.info("Firebase already initialized, returning existing instance");
         return FirebaseApp.getInstance();
     }
 }
