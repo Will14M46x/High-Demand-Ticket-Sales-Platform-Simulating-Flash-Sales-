@@ -104,25 +104,35 @@ public class AuthService {
         }
         
         try {
+            // CRITICAL: Verify password with Firebase before issuing JWT token
             if (firebaseEnabled) {
-                // Verify with Firebase (in real scenario, client would send Firebase token)
-                // For now, we verify user exists in Firebase
-                UserRecord firebaseUser = firebaseService.getUserByEmail(request.getEmail());
+                // Verify password using Firebase Authentication REST API
+                String firebaseIdToken = firebaseService.verifyPassword(request.getEmail(), request.getPassword());
                 
-                if (firebaseUser == null) {
+                if (firebaseIdToken == null) {
+                    // This should only happen if Firebase is disabled
+                    logger.warn("Firebase returned null token during password verification");
                     throw new InvalidCredentialsException("Invalid credentials");
                 }
+                
+                logger.debug("Password verified successfully with Firebase for user: {}", request.getEmail());
+            } else {
+                // Firebase is disabled (dev/test mode)
+                // WARNING: In production, this should NEVER be reached
+                logger.warn("Firebase is disabled - password verification skipped for: {}", request.getEmail());
+                logger.warn("This is INSECURE and should only be used in development/testing!");
             }
             
-            // Generate JWT token
+            // Generate JWT token only after successful password verification
             String token = jwtUtil.generateToken(user.getEmail(), user.getId(), user.getFirebaseUid());
             
             logger.info("User logged in successfully: {}", user.getEmail());
             return new AuthResponse(token, user.getId(), user.getEmail(), user.getName(), user.getFirebaseUid());
             
         } catch (FirebaseAuthException e) {
-            logger.error("Firebase authentication error during login: {}", e.getMessage());
-            throw new InvalidCredentialsException("Invalid credentials");
+            logger.error("Firebase authentication error during login for {}: {}", request.getEmail(), e.getMessage());
+            // Don't reveal whether it's email or password that's wrong - security best practice
+            throw new InvalidCredentialsException("Invalid email or password");
         }
     }
     
