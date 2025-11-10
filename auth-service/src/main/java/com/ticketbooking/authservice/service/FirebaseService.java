@@ -143,7 +143,7 @@ public class FirebaseService {
      * @return Firebase ID token if authentication succeeds
      * @throws FirebaseAuthException if authentication fails or Firebase is misconfigured
      */
-    public String verifyPassword(String email, String password) throws FirebaseAuthException {
+    public String verifyPassword(String email, String password) {
         if (!firebaseEnabled) {
             logger.warn("Firebase is disabled. Skipping password verification.");
             // In test/dev mode, we'll accept any password for existing users
@@ -152,10 +152,7 @@ public class FirebaseService {
         
         if (firebaseApiKey == null || firebaseApiKey.isEmpty()) {
             logger.error("Firebase API key is not configured. Cannot verify password.");
-            throw new FirebaseAuthException(
-                "CONFIGURATION_ERROR", 
-                "Firebase API key is not configured. Set firebase.api.key in application.properties"
-            );
+            throw new RuntimeException("Firebase API key is not configured. Set firebase.api.key in application.properties");
         }
         
         try {
@@ -183,7 +180,7 @@ public class FirebaseService {
                 return idToken;
             } else {
                 logger.error("Firebase authentication response missing idToken");
-                throw new FirebaseAuthException("AUTH_ERROR", "Invalid response from Firebase");
+                throw new RuntimeException("Invalid response from Firebase: missing idToken");
             }
             
         } catch (HttpClientErrorException e) {
@@ -191,15 +188,15 @@ public class FirebaseService {
             
             // Parse Firebase error response
             if (e.getStatusCode().value() == 400) {
-                throw new FirebaseAuthException("INVALID_CREDENTIALS", "Invalid email or password");
+                throw new RuntimeException("Invalid email or password");
             } else if (e.getStatusCode().value() == 401) {
-                throw new FirebaseAuthException("INVALID_CREDENTIALS", "Invalid email or password");
+                throw new RuntimeException("Invalid email or password");
             } else {
-                throw new FirebaseAuthException("AUTH_ERROR", "Authentication failed: " + e.getMessage());
+                throw new RuntimeException("Authentication failed: " + e.getMessage());
             }
         } catch (Exception e) {
             logger.error("Unexpected error during password verification: {}", e.getMessage());
-            throw new FirebaseAuthException("AUTH_ERROR", "Authentication failed: " + e.getMessage());
+            throw new RuntimeException("Authentication failed: " + e.getMessage());
         }
     }
 }

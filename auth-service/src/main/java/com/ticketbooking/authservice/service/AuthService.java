@@ -129,8 +129,10 @@ public class AuthService {
             logger.info("User logged in successfully: {}", user.getEmail());
             return new AuthResponse(token, user.getId(), user.getEmail(), user.getName(), user.getFirebaseUid());
             
-        } catch (FirebaseAuthException e) {
-            logger.error("Firebase authentication error during login for {}: {}", request.getEmail(), e.getMessage());
+
+
+        } catch (Exception e) {
+            logger.error("Authentication error during login for {}: {}", request.getEmail(), e.getMessage());
             // Don't reveal whether it's email or password that's wrong - security best practice
             throw new InvalidCredentialsException("Invalid email or password");
         }
