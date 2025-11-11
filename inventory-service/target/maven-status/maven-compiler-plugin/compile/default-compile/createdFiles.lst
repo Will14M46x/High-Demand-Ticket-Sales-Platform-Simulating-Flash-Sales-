@@ -1,0 +1,6 @@
+com\example\inventoryservice\repository\EventRepository.class
+com\example\inventoryservice\controller\EventController.class
+com\example\inventoryservice\controller\HealthController.class
+com\example\inventoryservice\service\InventoryService.class
+com\example\inventoryservice\InventoryServiceApplication.class
+com\example\inventoryservice\model\Event.class
