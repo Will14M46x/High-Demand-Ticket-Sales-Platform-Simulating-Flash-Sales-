@@ -84,8 +84,12 @@ public class EventController {
         return ResponseEntity.ok(updated);
     }
 
-
+    @GetMapping("/health")
+    public String healthCheck() {
+        return "Inventory service is running!";
+    }
 
 
 }
+
 
