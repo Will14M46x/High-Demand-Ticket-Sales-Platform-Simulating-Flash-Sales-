@@ -8,5 +8,5 @@ import lombok.Data;
 public class QueuePositionResponse {
     private String userId;
     private Integer position;
-    private Long estimatedWaitTime;
+    private String estimatedWaitTime;
 }

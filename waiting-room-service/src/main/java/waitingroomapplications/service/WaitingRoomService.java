@@ -26,7 +26,6 @@ public class WaitingRoomService {
             redisTemplate.opsForZSet().add(queueKey, userId, score);
 
             Long rank = redisTemplate.opsForZSet().rank(queueKey, userId);
-
             log.info("User {} joined queue {} at position {}", userId, eventId, rank);
 
             return rank != null ? rank.intValue() + 1 : 1;
@@ -37,22 +36,18 @@ public class WaitingRoomService {
         }
     }
 
-
     public Integer getPosition(String userId, Long eventId) {
         try {
             String queueKey = QUEUE_KEY_PREFIX + eventId;
-
             Long rank = redisTemplate.opsForZSet().rank(queueKey, userId);
 
             if (rank == null) {
                 String admittedKey = ADMITTED_KEY_PREFIX + eventId;
                 Boolean isAdmitted = redisTemplate.opsForSet().isMember(admittedKey, userId);
-
                 if (Boolean.TRUE.equals(isAdmitted)) {
                     log.info("User {} already admitted to event {}", userId, eventId);
                     return 0;
                 }
-
                 log.warn("User {} not found in queue for event {}", userId, eventId);
                 return null;
             }
@@ -71,21 +66,18 @@ public class WaitingRoomService {
             String admittedKey = ADMITTED_KEY_PREFIX + eventId;
 
             Set<String> usersToAdmit = redisTemplate.opsForZSet().range(queueKey, 0, batchSize - 1);
-
             if (usersToAdmit == null || usersToAdmit.isEmpty()) {
                 log.info("No users in queue to admit for event {}", eventId);
                 return Collections.emptyList();
             }
 
             List<String> admittedUsers = new ArrayList<>(usersToAdmit);
-
             for (String userId : admittedUsers) {
                 redisTemplate.opsForZSet().remove(queueKey, userId);
                 redisTemplate.opsForSet().add(admittedKey, userId);
             }
 
             log.info("Admitted {} users from queue for event {}", admittedUsers.size(), eventId);
-
             return admittedUsers;
 
         } catch (Exception e) {
@@ -99,18 +91,20 @@ public class WaitingRoomService {
             String queueKey = QUEUE_KEY_PREFIX + eventId;
             String admittedKey = ADMITTED_KEY_PREFIX + eventId;
 
-            Long queueSize = redisTemplate.opsForZSet().size(queueKey);
+            long waiting = Optional.ofNullable(redisTemplate.opsForZSet().size(queueKey)).orElse(0L);
+            long admitted = Optional.ofNullable(redisTemplate.opsForSet().size(admittedKey)).orElse(0L);
 
-            Long admittedCount = redisTemplate.opsForSet().size(admittedKey);
+            String estimatedWait = (waiting * 30L) + " seconds";
 
             QueueStatusResponse response = QueueStatusResponse.builder()
-                    .totalWaiting(queueSize != null ? queueSize : 0L)
-                    .totalAdmitted(admittedCount != null ? admittedCount : 0L)
-                    .queueLength(queueSize != null ? queueSize : 0L)
+                    .totalWaiting(waiting)
+                    .totalAdmitted(admitted)
+                    .queueLength(waiting)
+                    .estimatedWaitTime(estimatedWait)
                     .build();
 
-            log.info("Queue status for event {}: {} waiting, {} admitted",
-                    eventId, response.getTotalWaiting(), response.getTotalAdmitted());
+            log.info("Queue status for event {}: {} waiting, {} admitted, estimated wait {}",
+                    eventId, waiting, admitted, estimatedWait);
 
             return response;
 
@@ -120,14 +114,10 @@ public class WaitingRoomService {
         }
     }
 
-
     public boolean removeUser(String userId, Long eventId) {
         try {
             String queueKey = QUEUE_KEY_PREFIX + eventId;
-
-
             Long removed = redisTemplate.opsForZSet().remove(queueKey, userId);
-
             boolean wasRemoved = removed != null && removed > 0;
 
             if (wasRemoved) {
@@ -144,13 +134,10 @@ public class WaitingRoomService {
         }
     }
 
-
     public Map<String, Object> checkHealth() {
         Map<String, Object> health = new HashMap<>();
-
         try {
             String pong = redisTemplate.getConnectionFactory().getConnection().ping();
-
             boolean isConnected = "PONG".equalsIgnoreCase(pong);
 
             health.put("status", isConnected ? "UP" : "DOWN");

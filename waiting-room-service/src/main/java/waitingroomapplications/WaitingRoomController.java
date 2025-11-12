@@ -1,6 +1,5 @@
 package waitingroomapplications;
 
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +39,7 @@ public class WaitingRoomController {
             QueuePositionResponse response = QueuePositionResponse.builder()
                     .userId(request.getUserId())
                     .position(position)
-                    .estimatedWaitTime(position * 30L)
+                    .estimatedWaitTime((position * 30L) + " seconds")
                     .build();
 
             log.info("User {} added to queue at position {}", request.getUserId(), position);
@@ -54,9 +53,7 @@ public class WaitingRoomController {
     }
 
     @GetMapping("/position/{userId}")
-    public ResponseEntity<?> getPosition(
-            @PathVariable String userId,
-            @RequestParam Long eventId) {
+    public ResponseEntity<?> getPosition(@PathVariable String userId, @RequestParam Long eventId) {
         try {
             log.info("Getting position for user {} in event {}", userId, eventId);
 
@@ -70,7 +67,7 @@ public class WaitingRoomController {
             QueuePositionResponse response = QueuePositionResponse.builder()
                     .userId(userId)
                     .position(position)
-                    .estimatedWaitTime(position * 30L)
+                    .estimatedWaitTime((position * 30L) + " seconds")
                     .build();
 
             return ResponseEntity.ok(response);
@@ -85,13 +82,9 @@ public class WaitingRoomController {
     @PostMapping("/admit")
     public ResponseEntity<?> admitBatch(@Valid @RequestBody AdmitBatchRequest request) {
         try {
-            log.info("Admitting batch of {} users for event {}",
-                    request.getBatchSize(), request.getEventId());
+            log.info("Admitting batch of {} users for event {}", request.getBatchSize(), request.getEventId());
 
-            List<String> admittedUsers = waitingRoomService.admitBatch(
-                    request.getBatchSize(),
-                    request.getEventId()
-            );
+            List<String> admittedUsers = waitingRoomService.admitBatch(request.getBatchSize(), request.getEventId());
 
             Map<String, Object> response = Map.of(
                     "admittedUsers", admittedUsers,
@@ -125,9 +118,7 @@ public class WaitingRoomController {
     }
 
     @DeleteMapping("/remove/{userId}")
-    public ResponseEntity<?> removeUser(
-            @PathVariable String userId,
-            @RequestParam Long eventId) {
+    public ResponseEntity<?> removeUser(@PathVariable String userId, @RequestParam Long eventId) {
         try {
             log.info("Removing user {} from event {}", userId, eventId);
 
