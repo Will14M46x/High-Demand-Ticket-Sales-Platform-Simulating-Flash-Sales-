@@ -5,7 +5,7 @@ services:
     container_name: order-db
     environment:
       MYSQL_DATABASE: order_db
-      MYSQL_ROOT_PASSWORD: Slow_bo@t2004
+      MYSQL_ROOT_PASSWORD: root_password
     ports:
       # We'll access this on port 33062
       - "33062:3306"

@@ -27,6 +27,21 @@ public class EventController {
         return eventService.createEvent(request);
     }
 
+    @PostMapping("/{id}/release")
+    public ResponseEntity<String> releaseTickets(
+            @PathVariable Long id,
+            @RequestParam int quantity) {
+
+        boolean success = eventService.releaseTickets(id, quantity);
+
+        if (success) {
+            return ResponseEntity.ok("Tickets released successfully.");
+        } else {
+            // 409 Conflict is a good status code for a concurrency failure
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("Failed to release tickets (e.g., inventory lock).");
+        }
+    }
     // GET /api/inventory/events
     // Gets all events
     @GetMapping
@@ -41,6 +56,20 @@ public class EventController {
         return eventService.getEventById(id);
     }
 
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
+        // Call the service to do the logic
+        boolean wasDeleted = eventService.deleteEvent(id);
+
+        if (wasDeleted) {
+            // Success: Return 204 No Content
+            return ResponseEntity.noContent().build();
+        } else {
+            // Failure (not found): Return 404 Not Found
+            return ResponseEntity.notFound().build();
+        }
+    }
     // --- CRITICAL Ticket Reservation Endpoint ---
 
     /**

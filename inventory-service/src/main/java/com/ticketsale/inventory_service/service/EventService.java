@@ -49,6 +49,21 @@ public class EventService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public boolean deleteEvent(Long id) {
+        // First, check if the event even exists
+        if (!eventRepository.existsById(id)) {
+            // It doesn't exist, so we can't delete it
+            return false;
+        }
+
+        // It does exist, so we delete it
+        eventRepository.deleteById(id);
+
+        // Return true to signal success
+        return true;
+    }
+
     // --- CRITICAL Concurrency-Safe Logic ---
 
     /**
@@ -92,6 +107,46 @@ public class EventService {
             return false;
         } catch (Exception e) {
             System.err.println("Error during reservation: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Attempts to release a specified number of tickets back to the inventory.
+     * This is also transactional and uses optimistic locking.
+     * @param eventId The ID of the event
+     * @param quantity The number of tickets to release
+     * @return true if release was successful, false otherwise
+     */
+    @Transactional
+    public boolean releaseTickets(Long eventId, int quantity) {
+        try {
+            // 1. Find the event
+            Event event = eventRepository.findById(eventId)
+                    .orElseThrow(() -> new EntityNotFoundException("Event not found"));
+
+            // 2. Add the quantity back to the available pool
+            // We can also check to make sure we don't release more than total
+            int newQuantity = event.getAvailableTickets() + quantity;
+            if (newQuantity > event.getTotalTickets()) {
+                // This is a safety check, it shouldn't really happen
+                event.setAvailableTickets(event.getTotalTickets());
+            } else {
+                event.setAvailableTickets(newQuantity);
+            }
+
+            // 3. Save (JPA will check the @Version)
+            eventRepository.save(event);
+
+            System.out.println("Release successful for " + quantity + " tickets.");
+            return true;
+
+        } catch (ObjectOptimisticLockingFailureException e) {
+            // Concurrency failure. This is rare on a release, but possible.
+            System.err.println("Optimistic Lock conflict during release for event: " + eventId);
+            return false;
+        } catch (Exception e) {
+            System.err.println("Error during ticket release: " + e.getMessage());
             return false;
         }
     }

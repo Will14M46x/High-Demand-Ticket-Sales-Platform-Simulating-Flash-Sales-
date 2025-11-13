@@ -1,0 +1,59 @@
+#This was the docker compose used for inventory
+
+#version: '3.8'
+
+services:
+  # 1. Dedicated DB for the Inventory Service
+  inventory-db:
+    image: mysql:8.0
+    container_name: inventory-db
+    environment:
+      # This creates the 'inventory_db' schema
+      MYSQL_DATABASE: inventory_db
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      # Maps your computer's port 33061 to the container's port 3306
+      - "3308:3306"
+    volumes:
+      - inventory-data:/var/lib/mysql
+
+  # 2. Dedicated DB for the Booking/Order Service
+  order-db:
+    image: mysql:8.0
+    container_name: order-db
+    environment:
+      # This creates the 'order_db' schema
+      MYSQL_DATABASE: order_db
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      # Maps your computer's port 33062 to the container's port 3306 (placeholder)
+      - "33062:3306"
+    volumes:
+      - order-data:/var/lib/mysql
+
+  # 3. Dedicated DB for the Auth Service
+  auth-db:
+    image: mysql:8.0
+    container_name: auth-db
+    environment:
+      # This creates the 'auth_db' schema
+      MYSQL_DATABASE: auth_db
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      # Maps your computer's port 33063 to the container's port 3306 (placeholder)
+      - "33063:3306"
+    volumes:
+      - auth-data:/var/lib/mysql
+
+  # 4. Real-Time Data Store (Redis) for Waiting Room & Holds
+  redis:
+    image: redis:7.0-alpine
+    container_name: ticket-redis
+    ports:
+      - "6379:6379"
+
+# This section tells Docker to create persistent storage
+volumes:
+  inventory-data:
+  order-data:
+  auth-data:
