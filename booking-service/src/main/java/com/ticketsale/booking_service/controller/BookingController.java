@@ -2,6 +2,7 @@ package com.ticketsale.booking_service.controller;
 
 import com.ticketsale.booking_service.dto.BookingRequest;
 import com.ticketsale.booking_service.dto.OrderResponse;
+import com.ticketsale.booking_service.model.OrderStatus;
 import com.ticketsale.booking_service.service.BookingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -34,19 +35,23 @@ public class BookingController {
         }
     }
 
+    /**
+     * POST /api/booking/{orderId}/confirm
+     * Simulates a successful payment confirmation from a payment gateway.
+     */
     @PostMapping("/{orderId}/confirm")
     public ResponseEntity<OrderResponse> confirmBooking(@PathVariable Long orderId) {
-        try {
-            OrderResponse response = bookingService.confirmPayment(orderId);
+        // We no longer need a try-catch block
+        OrderResponse response = bookingService.confirmPayment(orderId);
+
+        // Check the status of the order response
+        if (response.getStatus() == OrderStatus.PAID) {
+            // It was a success!
             return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            // This will catch "Order not found", "Not pending", or "Hold expired"
-            OrderResponse errorResponse = OrderResponse.builder()
-                    .orderId(orderId)
-                    .message(e.getMessage())
-                    .build();
-            // 409 Conflict is a good status for a failed state change
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        } else {
+            // It was a failure (e.g., EXPIRED or another bad state)
+            // Return 409 Conflict with the error message from the service
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
     }
 

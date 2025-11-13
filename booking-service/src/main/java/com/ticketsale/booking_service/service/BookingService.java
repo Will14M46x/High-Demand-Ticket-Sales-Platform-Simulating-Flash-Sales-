@@ -103,12 +103,14 @@ public class BookingService {
 
         // 2. Check if the order is already in a final state
         if (order.getStatus() == OrderStatus.PAID || order.getStatus() == OrderStatus.EXPIRED) {
-            throw new RuntimeException("Order is already finalized. Current state: " + order.getStatus());
+            // It's already done, just return its status
+            return mapToOrderResponse(order, "Order is already finalized. Current state: " + order.getStatus());
         }
 
         // 3. Check if the order is PENDING (it should be)
         if (order.getStatus() != OrderStatus.PENDING) {
-            throw new RuntimeException("Order is not in PENDING state. Current state: " + order.getStatus());
+            // This case shouldn't happen, but good to check
+            return mapToOrderResponse(order, "Order is not in PENDING state. Current state: " + order.getStatus());
         }
 
         // 4. Check if the hold in Redis still exists
@@ -121,14 +123,15 @@ public class BookingService {
 
             // Set order status to EXPIRED
             order.setStatus(OrderStatus.EXPIRED);
-            orderRepository.save(order);
+            Order expiredOrder = orderRepository.save(order); // This will now commit
 
-            // --- THIS IS THE NEW LINE ---
             // Tell the inventory-service to release the tickets
             releaseTicketsInInventory(order.getEventId(), order.getQuantity());
-            // --------------------------
 
-            throw new RuntimeException("Hold expired. Payment failed.");
+            // --- THIS IS THE FIX ---
+            // Instead of throwing, we RETURN the failed DTO.
+            // The transaction completes successfully, and the EXPIRED status is saved.
+            return mapToOrderResponse(expiredOrder, "Hold expired. Payment failed.");
         }
 
         // 5. Hold exists! Payment is successful.
