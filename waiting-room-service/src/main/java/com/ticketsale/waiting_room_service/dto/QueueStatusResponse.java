@@ -1,0 +1,14 @@
+package com.ticketsale.waiting_room_service.dto; // <-- New package
+
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+// This code is based on your provided file
+public class QueueStatusResponse {
+    private Long totalWaiting;
+    private Long totalAdmitted;
+    private Long queueLength;
+    private String estimatedWaitTime;
+}

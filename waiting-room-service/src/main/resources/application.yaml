@@ -1,3 +1,15 @@
+server:
+  # New port for this service
+  port: 8087
+
 spring:
   application:
     name: waiting-room-service
+
+  # --- Redis Connection ---
+  # This points to the same Redis in Docker
+  # that our booking-service uses.
+  data:
+    redis:
+      host: localhost
+      port: 6379
