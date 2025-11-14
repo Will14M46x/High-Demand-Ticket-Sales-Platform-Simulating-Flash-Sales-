@@ -33,3 +33,7 @@ spring:
 inventory:
   service:
     url: "http://localhost:8085/api/inventory/events"
+
+waitingroom:
+  service:
+    url: "http://localhost:8087/api/waitingroom"
