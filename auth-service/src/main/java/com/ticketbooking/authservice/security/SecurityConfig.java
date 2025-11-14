@@ -49,8 +49,12 @@ public class SecurityConfig {
                     "/api/auth/signup",
                     "/api/auth/login",
                     "/api/auth/verify-firebase-token",
+                    "/api/auth/refresh-token",
+                    "/api/auth/logout",
                     "/api/auth/health",
-                    "/api/auth/validate-token"
+                    "/api/auth/validate-token",
+                    "/api/auth/rate-limit/**",
+                    "/h2-console/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
