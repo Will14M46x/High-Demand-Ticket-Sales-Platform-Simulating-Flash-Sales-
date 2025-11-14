@@ -17,50 +17,39 @@ public class BookingController {
     private BookingService bookingService;
 
     @PostMapping
-    public ResponseEntity<OrderResponse> createBooking(@RequestBody BookingRequest request) {
+    public ResponseEntity<OrderResponse> createBooking(
+            @RequestBody BookingRequest request,
+            // --- THIS IS THE CHANGE ---
+            // We get the userId from the token, not the body
+            @RequestAttribute("userId") Long userId
+    ) {
         try {
-            OrderResponse response = bookingService.createBooking(request);
-            // 201 Created status
+            // --- WE PASS THE SECURE 'userId' TO THE SERVICE ---
+            OrderResponse response = bookingService.createBooking(request, userId);
+
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
-            // --- ADD THIS NEW CATCH BLOCK ---
         } catch (SecurityException e) {
-            // User was not admitted
-            OrderResponse errorResponse = OrderResponse.builder()
-                    .message(e.getMessage())
-                    .build();
-            // 403 Forbidden is the correct code for "I know who you are, but you can't do this"
+            OrderResponse errorResponse = OrderResponse.builder().message(e.getMessage()).build();
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
 
         } catch (RuntimeException e) {
-            // e.g., if inventory service returned 409 Conflict (no stock)
-            OrderResponse errorResponse = OrderResponse.builder()
-                    .message(e.getMessage())
-                    .build();
+            OrderResponse errorResponse = OrderResponse.builder().message(e.getMessage()).build();
             return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
         }
     }
 
-    /**
-     * POST /api/booking/{orderId}/confirm
-     * Simulates a successful payment confirmation from a payment gateway.
-     */
     @PostMapping("/{orderId}/confirm")
     public ResponseEntity<OrderResponse> confirmBooking(@PathVariable Long orderId) {
 
-        // --- ADD A TRY-CATCH BLOCK ---
         try {
             OrderResponse response = bookingService.confirmPayment(orderId);
-
             if (response.getStatus() == OrderStatus.PAID) {
                 return ResponseEntity.ok(response);
             } else {
-                // This handles the EXPIRED case
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
             }
         } catch (Exception e) {
-            // This will catch any other error (like Redis down)
-            // and prevent the "silent rollback"
             OrderResponse errorResponse = OrderResponse.builder()
                     .orderId(orderId)
                     .message("Failed to confirm payment: " + e.getMessage())
@@ -68,6 +57,4 @@ public class BookingController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
-
-
 }
