@@ -10,18 +10,22 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/events")
+@RequestMapping("/api/inventory/events")
 @CrossOrigin(origins = "*")
 public class EventController {
 
     private final InventoryService inventoryService;
 
+    @Autowired
+    private EventRepository eventRepository;
+
     public EventController(InventoryService inventoryService) {
         this.inventoryService = inventoryService;
     }
 
-    @Autowired
-    private EventRepository eventRepository;
+    // -------------------------------
+    // CRUD ENDPOINTS FOR EVENTS
+    // -------------------------------
 
     @GetMapping
     public List<Event> getAllEvents() {
@@ -57,9 +61,16 @@ public class EventController {
         eventRepository.deleteById(id);
     }
 
-    @PutMapping("/reserve/{eventId}")
+    // -------------------------------
+    // TICKET RESERVATION ENDPOINTS
+    // MUST MATCH BookingService EXACTLY
+    // -------------------------------
+
+    // RESERVE TICKETS
+    @PostMapping("/{eventId}/reserve")
     public ResponseEntity<?> reserveTicket(@PathVariable Long eventId,
                                            @RequestParam(defaultValue = "1") int quantity) {
+
         Event updated = inventoryService.reserveTickets(eventId, quantity);
 
         if (updated == null) {
@@ -70,9 +81,12 @@ public class EventController {
 
         return ResponseEntity.ok(updated);
     }
-    @PutMapping("/release/{eventId}")
+
+    // RELEASE TICKETS
+    @PostMapping("/{eventId}/release")
     public ResponseEntity<?> releaseTickets(@PathVariable Long eventId,
                                             @RequestParam(defaultValue = "1") int quantity) {
+
         Event updated = inventoryService.releaseTickets(eventId, quantity);
 
         if (updated == null) {
@@ -84,12 +98,13 @@ public class EventController {
         return ResponseEntity.ok(updated);
     }
 
+    // -------------------------------
+    // HEALTH CHECK
+    // -------------------------------
+
     @GetMapping("/health")
     public String healthCheck() {
         return "Inventory service is running!";
-    }
-
+                }
 
 }
-
-
