@@ -9,7 +9,7 @@
 ### 1. **Your Firebase Project Details**
 - **Project ID**: andrew-ju-project
 - **Web API Key**: AIzaSyAeKAKhBCoxnSDMjaC3qAAh5estwLkZvpk ✅ **CONFIGURED**
-- **JWT Secret**: Generated and set in all services ✅ **CONFIGURED**
+- **JWT Secret**: Loaded via `JWT_SECRET` environment variable in every service ✅
 
 ### 2. **Services Configured**
 
@@ -27,16 +27,16 @@ All these files have been updated with your Firebase and JWT settings:
 ✅ `auth-service/src/main/resources/application.properties`
 - Firebase enabled
 - Web API Key set
-- JWT secret generated
+- JWT secret pulled from `JWT_SECRET`
 
 ✅ `inventory-service/inventory_service/src/main/resources/application.properties`
-- Same JWT secret as auth service
+- Reads JWT secret from `JWT_SECRET`
 
 ✅ `booking-service/src/main/resources/application.properties`
-- Same JWT secret as auth service
+- Reads JWT secret from `JWT_SECRET`
 
 ✅ `waiting-room-service/src/main/resources/application.properties`
-- Same JWT secret as auth service
+- Reads JWT secret from `JWT_SECRET`
 
 ---
 
@@ -117,7 +117,7 @@ This is your one-stop guide with:
 ```
 Firebase Project: andrew-ju-project
 Web API Key: AIzaSyAeKAKhBCoxnSDMjaC3qAAh5estwLkZvpk
-JWT Secret: 7K9mP2nQ5tU8wB1dF4gH6jI0kM3nO7pR9sT2uV5xY8zA1cE4fG7hJ0kL3mN6oP9r
+JWT Secret: set via JWT_SECRET env var (same value for every service)
 
 Service Ports:
 - Auth: 8081

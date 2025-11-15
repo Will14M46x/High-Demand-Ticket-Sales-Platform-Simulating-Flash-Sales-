@@ -379,7 +379,7 @@ mvn verify
 server.port=8081
 spring.datasource.url=jdbc:mysql://localhost:3306/ticket_auth_db
 firebase.enabled=false  # true for production
-jwt.secret=YOUR_SECRET_KEY_HERE
+jwt.secret=${JWT_SECRET}
 ```
 
 ### Inventory Service

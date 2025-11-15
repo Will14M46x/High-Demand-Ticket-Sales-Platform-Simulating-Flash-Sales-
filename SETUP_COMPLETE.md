@@ -7,7 +7,7 @@
 
 All services are now configured with:
 - ✅ **Firebase Web API Key**: `AIzaSyAeKAKhBCoxnSDMjaC3qAAh5estwLkZvpk`
-- ✅ **JWT Secret**: Generated and synchronized across all services
+- ✅ **JWT Secret**: Loaded from the `JWT_SECRET` environment variable
 - ✅ **Service Ports**: Fixed (no conflicts)
 - ✅ **Authentication**: Integrated into all microservices
 
@@ -127,7 +127,7 @@ curl -X POST http://localhost:8084/api/bookings \
 |------|-------|
 | **Firebase Project** | andrew-ju-project |
 | **Web API Key** | AIzaSyAeKAKhBCoxnSDMjaC3qAAh5estwLkZvpk |
-| **JWT Secret** | 7K9mP2nQ5tU8wB1dF4gH6jI0kM3nO7pR9sT2uV5xY8zA1cE4fG7hJ0kL3mN6oP9r |
+| **JWT Secret** | Provided via `JWT_SECRET` env var (same value for every service) |
 | **Auth Service** | Port 8081 |
 | **Inventory Service** | Port 8082 |
 | **Waiting Room Service** | Port 8083 |
