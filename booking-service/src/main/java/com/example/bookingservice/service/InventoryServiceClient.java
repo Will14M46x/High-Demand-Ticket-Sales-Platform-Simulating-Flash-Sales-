@@ -23,7 +23,7 @@ public class InventoryServiceClient {
      */
     public EventDTO getEvent(Long eventId) {
         try {
-            String url = inventoryServiceUrl + "/api/events/" + eventId;
+            String url = inventoryServiceUrl + "/api/inventory/events/" + eventId;
             return restTemplate.getForObject(url, EventDTO.class);
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch event from Inventory Service: " + e.getMessage());
@@ -36,12 +36,15 @@ public class InventoryServiceClient {
     public EventDTO reserveTickets(Long eventId, int quantity) {
         try {
             String url = UriComponentsBuilder
-                    .fromHttpUrl(inventoryServiceUrl + "/api/events/reserve/" + eventId)
+                    .fromHttpUrl(inventoryServiceUrl + "/api/inventory/events/" + eventId + "/reserve")
                     .queryParam("quantity", quantity)
                     .toUriString();
 
-            restTemplate.put(url, null);
-            return getEvent(eventId);
+            EventDTO response = restTemplate.postForObject(url, null, EventDTO.class);
+            if (response == null) {
+                throw new RuntimeException("Inventory service returned empty response when reserving tickets.");
+            }
+            return response;
         } catch (Exception e) {
             throw new RuntimeException("Failed to reserve tickets: " + e.getMessage());
         }
@@ -52,14 +55,12 @@ public class InventoryServiceClient {
      */
     public void releaseTickets(Long eventId, int quantity) {
         try {
-            // This would call an endpoint like PUT /api/events/release/{eventId}?quantity=X
-            // For now, this is a placeholder - you'd need to implement this endpoint in Inventory Service
             String url = UriComponentsBuilder
-                    .fromHttpUrl(inventoryServiceUrl + "/api/events/release/" + eventId)
+                    .fromHttpUrl(inventoryServiceUrl + "/api/inventory/events/" + eventId + "/release")
                     .queryParam("quantity", quantity)
                     .toUriString();
-            
-            restTemplate.put(url, null);
+
+            restTemplate.postForLocation(url, null);
         } catch (Exception e) {
             // Log error but don't throw - this is a cleanup operation
             System.err.println("Failed to release tickets: " + e.getMessage());
