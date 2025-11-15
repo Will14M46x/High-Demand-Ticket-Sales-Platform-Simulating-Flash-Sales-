@@ -1,0 +1,37 @@
+services:
+  # 1. Dedicated DB for the Booking/Order Service
+  order-db:
+    image: mysql:8.0
+    container_name: order-db
+    environment:
+      MYSQL_DATABASE: order_db
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      # We'll access this on port 33062
+      - "33062:3306"
+    volumes:
+      - order-data:/var/lib/mysql
+
+  # 2. Dedicated DB for the Auth Service (for later)
+  auth-db:
+    image: mysql:8.0
+    container_name: auth-db
+    environment:
+      MYSQL_DATABASE: auth_db
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      # We'll access this on port 33063
+      - "33063:3306"
+    volumes:
+      - auth-data:/var/lib/mysql
+
+  # 3. Real-Time Data Store (Redis) for Waiting Room & Holds
+  redis:
+    image: redis:7.0-alpine
+    container_name: ticket-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  order-data:
+  auth-data:
