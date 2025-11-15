@@ -94,7 +94,7 @@ function BookingPage() {
         quantity: quantity,
         totalPrice: (event.price * quantity).toFixed(2)
       }
-      const bookingResponse = await bookingAPI.createBooking(bookingData)
+      await bookingAPI.createBooking(bookingData)
 
       // Step 3: Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000))

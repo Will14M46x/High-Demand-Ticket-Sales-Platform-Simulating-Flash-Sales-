@@ -375,7 +375,7 @@ public class AuthService {
     public RateLimitInfo getRateLimitInfo(String email) {
         boolean isLockedOut = rateLimitService.isLockedOut(email);
         int remainingAttempts = rateLimitService.getRemainingAttempts(email);
-        Long lockoutTime = isLockedOut ? rateLimitService.getRemainingLockoutTime(email) : 0L;
+        long lockoutTime = isLockedOut ? rateLimitService.getRemainingLockoutTime(email) : 0L;
         
         String message;
         if (isLockedOut) {

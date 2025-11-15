@@ -11,7 +11,7 @@ import {
   Plus,
   RefreshCw
 } from 'lucide-react'
-import { inventoryAPI, bookingAPI } from '../services/api.service'
+import { inventoryAPI } from '../services/api.service'
 
 function AdminPage() {
   const [stats, setStats] = useState({

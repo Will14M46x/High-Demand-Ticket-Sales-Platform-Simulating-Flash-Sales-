@@ -1,5 +1,5 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom'
-import { Ticket, LogOut, User, Calendar, Settings } from 'lucide-react'
+import { Ticket, LogOut, User } from 'lucide-react'
 import useAuthStore from '../store/useAuthStore'
 
 function Layout() {
