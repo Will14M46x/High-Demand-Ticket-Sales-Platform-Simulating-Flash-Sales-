@@ -1,4 +1,4 @@
-package com.ticketbooking.authservice.security;
+package com.example.inventoryservice.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,8 +14,11 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.List;
 
+/**
+ * Security Configuration for Inventory Service
+ * Configures JWT-based authentication
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -23,7 +26,7 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
     
-    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:8080}")
+    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:8080,http://localhost:4200,http://localhost:8081}")
     private String[] allowedOrigins;
     
     @Value("${cors.allowed-methods:GET,POST,PUT,DELETE,OPTIONS}")
@@ -45,15 +48,17 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/api/auth/signup",
-                    "/api/auth/login",
-                    "/api/auth/verify-firebase-token",
-                    "/api/auth/health",
-                    "/api/auth/validate-token"
-                ).permitAll()
+                // Public endpoints - no authentication required
+                .requestMatchers("/api/events/health", "/actuator/**", "/h2-console/**").permitAll()
+                // GET all events and GET event by ID - allow without authentication for browsing
+                .requestMatchers("GET", "/api/events", "/api/events/**").permitAll()
+                // POST, PUT, DELETE operations require authentication
+                .requestMatchers("POST", "/api/events/**").authenticated()
+                .requestMatchers("PUT", "/api/events/**").authenticated()
+                .requestMatchers("DELETE", "/api/events/**").authenticated()
                 .anyRequest().authenticated()
             )
+            .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin())) // For H2 console
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();

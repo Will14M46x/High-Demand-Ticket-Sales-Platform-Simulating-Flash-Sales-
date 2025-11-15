@@ -1,4 +1,4 @@
-package com.ticketbooking.authservice.security;
+package ticketbooking.waitingroomapplication.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,8 +14,11 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.List;
 
+/**
+ * Security Configuration for Waiting Room Service
+ * Users must be authenticated to join the waiting room
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -23,7 +26,7 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
     
-    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:8080}")
+    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:8080,http://localhost:4200,http://localhost:8081}")
     private String[] allowedOrigins;
     
     @Value("${cors.allowed-methods:GET,POST,PUT,DELETE,OPTIONS}")
@@ -45,13 +48,12 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/api/auth/signup",
-                    "/api/auth/login",
-                    "/api/auth/verify-firebase-token",
-                    "/api/auth/health",
-                    "/api/auth/validate-token"
-                ).permitAll()
+                // Public endpoints
+                .requestMatchers("/waiting-room/health", "/actuator/**").permitAll()
+                // Queue stats is public (for monitoring)
+                .requestMatchers("/waiting-room/stats").permitAll()
+                // All other operations require authentication
+                .requestMatchers("/waiting-room/**").authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

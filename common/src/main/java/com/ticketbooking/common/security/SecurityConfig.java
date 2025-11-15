@@ -1,4 +1,4 @@
-package com.ticketbooking.authservice.security;
+package com.ticketbooking.common.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +16,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Shared Security Configuration for all microservices
+ * Configures JWT-based authentication and CORS
+ * 
+ * Each service can override this with @EnableWebSecurity and custom rules
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -23,7 +29,7 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
     
-    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:8080}")
+    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:8080,http://localhost:4200}")
     private String[] allowedOrigins;
     
     @Value("${cors.allowed-methods:GET,POST,PUT,DELETE,OPTIONS}")
@@ -38,6 +44,10 @@ public class SecurityConfig {
     @Value("${cors.max-age:3600}")
     private long maxAge;
     
+    /**
+     * Configure security filter chain
+     * Override this method in each service to customize authentication rules
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -45,13 +55,9 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/api/auth/signup",
-                    "/api/auth/login",
-                    "/api/auth/verify-firebase-token",
-                    "/api/auth/health",
-                    "/api/auth/validate-token"
-                ).permitAll()
+                // Allow health check endpoints without authentication
+                .requestMatchers("/**/health", "/actuator/**").permitAll()
+                // All other requests require authentication
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -59,6 +65,9 @@ public class SecurityConfig {
         return http.build();
     }
     
+    /**
+     * Configure CORS
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
