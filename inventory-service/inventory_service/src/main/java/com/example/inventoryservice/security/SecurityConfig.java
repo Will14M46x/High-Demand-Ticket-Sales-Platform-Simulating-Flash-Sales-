@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -51,11 +52,11 @@ public class SecurityConfig {
                 // Public endpoints - no authentication required
                 .requestMatchers("/api/events/health", "/actuator/**", "/h2-console/**").permitAll()
                 // GET all events and GET event by ID - allow without authentication for browsing
-                .requestMatchers("GET", "/api/events", "/api/events/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/**").permitAll()
                 // POST, PUT, DELETE operations require authentication
-                .requestMatchers("POST", "/api/events/**").authenticated()
-                .requestMatchers("PUT", "/api/events/**").authenticated()
-                .requestMatchers("DELETE", "/api/events/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/events/**").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/events/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/events/**").authenticated()
                 .anyRequest().authenticated()
             )
             .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin())) // For H2 console
