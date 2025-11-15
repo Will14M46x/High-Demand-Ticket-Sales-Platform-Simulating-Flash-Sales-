@@ -32,7 +32,7 @@ public class SecurityConfig {
     @Value("${cors.allowed-headers:*}")
     private String allowedHeaders;
     
-    @Value("${cors.allow-credentials:false}")
+    @Value("${cors.allow-credentials:true}")
     private boolean allowCredentials;
     
     @Value("${cors.max-age:3600}")
