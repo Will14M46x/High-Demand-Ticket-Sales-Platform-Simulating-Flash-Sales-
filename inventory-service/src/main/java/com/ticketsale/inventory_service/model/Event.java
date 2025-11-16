@@ -3,6 +3,8 @@ package com.ticketsale.inventory_service.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -32,4 +34,13 @@ public class Event {
     // It maps to the 'version' column we created in SQL
     @Version
     private Integer version;
+
+    @Column
+    private String location;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal price;
+
+    @Column(length = 1000)
+    private String description;
 }

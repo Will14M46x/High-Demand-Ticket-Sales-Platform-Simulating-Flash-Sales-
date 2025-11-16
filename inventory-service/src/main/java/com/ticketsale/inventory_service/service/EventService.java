@@ -19,22 +19,31 @@ public class EventService {
     @Autowired
     private EventRepository eventRepository;
 
-    // --- CRUD Operations (as required by spec) ---
-
+    /**
+     * Creates a new event in the database.
+     */
     @Transactional
     public EventResponse createEvent(CreateEventRequest request) {
         Event event = new Event();
         event.setName(request.getName());
         event.setTotalTickets(request.getTotalTickets());
-        // When creating, available tickets = total tickets
         event.setAvailableTickets(request.getTotalTickets());
         event.setSaleStartTime(request.getSaleStartTime());
-        // Version starts at 0 automatically
+
+        // --- UPDATED ---
+        // Save the new fields from the frontend
+        event.setLocation(request.getLocation());
+        event.setPrice(request.getPrice());
+        event.setDescription(request.getDescription());
+        // ---------------
 
         Event savedEvent = eventRepository.save(event);
         return mapToEventResponse(savedEvent);
     }
 
+    /**
+     * Retrieves a single event by its ID.
+     */
     @Transactional(readOnly = true)
     public EventResponse getEventById(Long id) {
         Event event = eventRepository.findById(id)
@@ -42,6 +51,9 @@ public class EventService {
         return mapToEventResponse(event);
     }
 
+    /**
+     * Retrieves all events.
+     */
     @Transactional(readOnly = true)
     public List<EventResponse> getAllEvents() {
         return eventRepository.findAll().stream()
@@ -49,62 +61,25 @@ public class EventService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
-    public boolean deleteEvent(Long id) {
-        // First, check if the event even exists
-        if (!eventRepository.existsById(id)) {
-            // It doesn't exist, so we can't delete it
-            return false;
-        }
-
-        // It does exist, so we delete it
-        eventRepository.deleteById(id);
-
-        // Return true to signal success
-        return true;
-    }
-
-    // --- CRITICAL Concurrency-Safe Logic ---
-
     /**
-     * Attempts to reserve a specified number of tickets for an event.
-     * This method is transactional and uses optimistic locking.
-     * @param eventId The ID of the event
-     * @param quantity The number of tickets to reserve
-     * @return true if reservation was successful, false otherwise
+     * Atomically reserves tickets for an event using optimistic locking.
      */
     @Transactional
     public boolean reserveTickets(Long eventId, int quantity) {
         try {
-            // 1. Find the event
             Event event = eventRepository.findById(eventId)
                     .orElseThrow(() -> new EntityNotFoundException("Event not found"));
 
-            // 2. Check availability
             if (event.getAvailableTickets() >= quantity) {
-                // 3. Decrement inventory
                 event.setAvailableTickets(event.getAvailableTickets() - quantity);
-
-                // 4. Save
-                // JPA will automatically check the @Version field.
-                // If the version has changed since we read it (step 1),
-                // it will throw ObjectOptimisticLockingFailureException.
                 eventRepository.save(event);
-
-                System.out.println("Reservation successful for " + quantity + " tickets.");
                 return true;
             } else {
-                // Not enough tickets
-                System.out.println("Reservation failed: Not enough tickets.");
-                return false;
+                return false; // Not enough tickets
             }
         } catch (ObjectOptimisticLockingFailureException e) {
-            // --- CONCURRENCY FAILURE ---
-            // This is NOT an error. It's a feature.
-            // It means another user's transaction completed first.
-            // The Booking Service must handle this (e.g., by retrying or failing the order)
             System.err.println("Optimistic Lock conflict for event: " + eventId);
-            return false;
+            return false; // Concurrency failure
         } catch (Exception e) {
             System.err.println("Error during reservation: " + e.getMessage());
             return false;
@@ -112,48 +87,45 @@ public class EventService {
     }
 
     /**
-     * Attempts to release a specified number of tickets back to the inventory.
-     * This is also transactional and uses optimistic locking.
-     * @param eventId The ID of the event
-     * @param quantity The number of tickets to release
-     * @return true if release was successful, false otherwise
+     * Atomically releases tickets back to an event.
      */
     @Transactional
     public boolean releaseTickets(Long eventId, int quantity) {
         try {
-            // 1. Find the event
             Event event = eventRepository.findById(eventId)
                     .orElseThrow(() -> new EntityNotFoundException("Event not found"));
 
-            // 2. Add the quantity back to the available pool
-            // We can also check to make sure we don't release more than total
             int newQuantity = event.getAvailableTickets() + quantity;
+            // Safety check: don't release more than the total tickets
             if (newQuantity > event.getTotalTickets()) {
-                // This is a safety check, it shouldn't really happen
                 event.setAvailableTickets(event.getTotalTickets());
             } else {
                 event.setAvailableTickets(newQuantity);
             }
 
-            // 3. Save (JPA will check the @Version)
             eventRepository.save(event);
-
-            System.out.println("Release successful for " + quantity + " tickets.");
             return true;
-
-        } catch (ObjectOptimisticLockingFailureException e) {
-            // Concurrency failure. This is rare on a release, but possible.
-            System.err.println("Optimistic Lock conflict during release for event: " + eventId);
-            return false;
         } catch (Exception e) {
             System.err.println("Error during ticket release: " + e.getMessage());
             return false;
         }
     }
 
-    // --- Helper Method ---
+    /**
+     * Deletes an event by its ID.
+     */
+    @Transactional
+    public boolean deleteEvent(Long id) {
+        if (!eventRepository.existsById(id)) {
+            return false;
+        }
+        eventRepository.deleteById(id);
+        return true;
+    }
 
-    // Utility method to map the Event (Entity) to an EventResponse (DTO)
+    /**
+     * Helper method to map the Event (Entity) to an EventResponse (DTO).
+     */
     private EventResponse mapToEventResponse(Event event) {
         EventResponse dto = new EventResponse();
         dto.setId(event.getId());
@@ -161,6 +133,13 @@ public class EventService {
         dto.setTotalTickets(event.getTotalTickets());
         dto.setAvailableTickets(event.getAvailableTickets());
         dto.setSaleStartTime(event.getSaleStartTime());
+
+        // --- UPDATED ---
+        // Add the new fields to the response
+        dto.setLocation(event.getLocation());
+        dto.setPrice(event.getPrice());
+        dto.setDescription(event.getDescription());
+        // ---------------
         return dto;
     }
 }
