@@ -163,7 +163,7 @@ public class WaitingRoomService {
     public Map<String, Object> checkHealth() {
         Map<String, Object> health = new HashMap<>();
         try {
-            String pong = redisTemplate.getConnectionFactory().getConnection().ping();
+            String pong = redisTemplate.execute(connection -> connection.ping());
             boolean isConnected = "PONG".equalsIgnoreCase(pong);
 
             health.put("status", isConnected ? "UP" : "DOWN");
