@@ -23,8 +23,15 @@ public class WaitingRoomService {
     public Integer joinQueue(String userId, Long eventId, Integer quantity) {
         try {
             String queueKey = QUEUE_KEY_PREFIX + eventId;
-            double score = System.currentTimeMillis();
 
+            // Prevent duplicate re-joins from changing position: return existing rank if present
+            Long existingRank = redisTemplate.opsForZSet().rank(queueKey, userId);
+            if (existingRank != null) {
+                log.info("User {} already in queue {} at position {}", userId, eventId, existingRank);
+                return existingRank.intValue() + 1;
+            }
+
+            double score = System.currentTimeMillis();
             redisTemplate.opsForZSet().add(queueKey, userId, score);
 
             Long rank = redisTemplate.opsForZSet().rank(queueKey, userId);
