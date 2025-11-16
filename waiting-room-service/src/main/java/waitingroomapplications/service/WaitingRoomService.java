@@ -45,7 +45,7 @@ public class WaitingRoomService {
 
         } catch (Exception e) {
             log.error("Error joining queue for user {}: ", userId, e);
-            throw new RuntimeException("Failed to join queue", e);
+            throw new RuntimeException("Failed to join queue for user " + userId + " and event " + eventId, e);
         }
     }
 
