@@ -15,7 +15,8 @@ public class WaitingRoomService {
 
     private static final String QUEUE_KEY_PREFIX = "waitingroom:queue:";
     private static final String ADMITTED_KEY_PREFIX = "waitingroom:admitted:";
-    public static final long ESTIMATED_WAIT_PER_USER_SECONDS = 30L;
+    @org.springframework.beans.factory.annotation.Value("${waiting-room.estimated-wait-per-user:30}")
+    private long estimatedWaitPerUserSeconds;
 
     private final RedisTemplate<String, String> redisTemplate;
 
@@ -102,7 +103,7 @@ public class WaitingRoomService {
             long waiting = Optional.ofNullable(redisTemplate.opsForZSet().size(queueKey)).orElse(0L);
             long admitted = Optional.ofNullable(redisTemplate.opsForSet().size(admittedKey)).orElse(0L);
 
-            String estimatedWait = (waiting * ESTIMATED_WAIT_PER_USER_SECONDS) + " seconds";
+            String estimatedWait = formatEstimatedWait(waiting * estimatedWaitPerUserSeconds);
 
             QueueStatusResponse response = QueueStatusResponse.builder()
                     .totalWaiting(waiting)
@@ -163,5 +164,17 @@ public class WaitingRoomService {
         }
 
         return health;
+    }
+
+    private String formatEstimatedWait(long seconds) {
+        if (seconds < 60) {
+            return seconds + " seconds";
+        }
+        long mins = seconds / 60;
+        long secs = seconds % 60;
+        if (secs == 0) {
+            return mins + " minutes";
+        }
+        return mins + "m " + secs + "s";
     }
 }

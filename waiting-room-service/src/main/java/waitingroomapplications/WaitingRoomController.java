@@ -1,6 +1,6 @@
 package waitingroomapplications;
 
-import jakarta.validation.Valid;
+import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -25,6 +25,18 @@ public class WaitingRoomController {
 
     private final WaitingRoomService waitingRoomService;
 
+    @org.springframework.beans.factory.annotation.Value("${waiting-room.estimated-wait-per-user:30}")
+    private long estimatedWaitPerUserSeconds;
+
+    @org.springframework.beans.factory.annotation.Value("${server.port}")
+    private int serverPort;
+
+    @org.springframework.beans.factory.annotation.Value("${spring.data.redis.host}")
+    private String redisHost;
+
+    @org.springframework.beans.factory.annotation.Value("${spring.data.redis.port}")
+    private int redisPort;
+
     @PostMapping("/join")
     public ResponseEntity<?> joinQueue(@Valid @RequestBody JoinQueueRequest request) {
         try {
@@ -39,7 +51,7 @@ public class WaitingRoomController {
             QueuePositionResponse response = QueuePositionResponse.builder()
                     .userId(request.getUserId())
                     .position(position)
-                    .estimatedWaitTime((position * waitingroomapplications.service.WaitingRoomService.ESTIMATED_WAIT_PER_USER_SECONDS) + " seconds")
+                    .estimatedWaitTime((position * estimatedWaitPerUserSeconds) + " seconds")
                     .build();
 
             log.info("User {} added to queue at position {}", request.getUserId(), position);
@@ -67,7 +79,7 @@ public class WaitingRoomController {
             QueuePositionResponse response = QueuePositionResponse.builder()
                     .userId(userId)
                     .position(position)
-                    .estimatedWaitTime((position * waitingroomapplications.service.WaitingRoomService.ESTIMATED_WAIT_PER_USER_SECONDS) + " seconds")
+                    .estimatedWaitTime((position * estimatedWaitPerUserSeconds) + " seconds")
                     .build();
 
             return ResponseEntity.ok(response);
@@ -142,9 +154,7 @@ public class WaitingRoomController {
     }
 
     @GetMapping("/health")
-    public ResponseEntity<?> healthCheck(@org.springframework.beans.factory.annotation.Value("${server.port}") int serverPort,
-                                         @org.springframework.beans.factory.annotation.Value("${spring.data.redis.host}") String redisHost,
-                                         @org.springframework.beans.factory.annotation.Value("${spring.data.redis.port}") int redisPort) {
+    public ResponseEntity<?> healthCheck() {
         try {
             log.info("Health check requested");
 

@@ -1,6 +1,6 @@
 package waitingroomapplications.dto;
 
-import jakarta.validation.constraints.Min;
+import javax.validation.constraints.Min;
 import lombok.Builder;
 import lombok.Data;
 
