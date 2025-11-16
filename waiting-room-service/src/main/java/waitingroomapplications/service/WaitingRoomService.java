@@ -33,7 +33,8 @@ public class WaitingRoomService {
                 return existingRank.intValue() + 1;
             }
 
-            double score = System.currentTimeMillis();
+            // Use high-resolution timestamp to minimize equal-score collisions for simultaneous joins
+            double score = (double) System.nanoTime();
             redisTemplate.opsForZSet().add(queueKey, userId, score);
 
             Long rank = redisTemplate.opsForZSet().rank(queueKey, userId);
