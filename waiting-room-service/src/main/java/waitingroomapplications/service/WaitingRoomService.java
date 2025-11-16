@@ -77,7 +77,7 @@ public class WaitingRoomService {
 
         } catch (Exception e) {
             log.error("Error getting position for user {}: ", userId, e);
-            throw new RuntimeException("Failed to get position", e);
+            throw new RuntimeException("Failed to get position for user " + userId + " and event " + eventId, e);
         }
     }
 
