@@ -3,6 +3,7 @@ package waitingroomapplications.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import waitingroomapplications.dto.PositionInfo;
 import waitingroomapplications.dto.PositionStatus;
@@ -86,24 +87,30 @@ public class WaitingRoomService {
             String queueKey = QUEUE_KEY_PREFIX + eventId;
             String admittedKey = ADMITTED_KEY_PREFIX + eventId;
 
-            Set<String> usersToAdmit = redisTemplate.opsForZSet().range(queueKey, 0, batchSize - 1);
-            if (usersToAdmit == null || usersToAdmit.isEmpty()) {
-                log.info("No users in queue to admit for event {}", eventId);
-                return Collections.emptyList();
+            // Atomically fetch first N users from ZSET, remove them from queue, and add to admitted set
+            String lua =
+                    "local users = redis.call('ZRANGE', KEYS[1], 0, tonumber(ARGV[1]) - 1)\n" +
+                    "if (#users == 0) then return users end\n" +
+                    "for i, u in ipairs(users) do\n" +
+                    "  redis.call('ZREM', KEYS[1], u)\n" +
+                    "  redis.call('SADD', KEYS[2], u)\n" +
+                    "end\n" +
+                    "return users\n";
+
+            DefaultRedisScript<List> script = new DefaultRedisScript<>();
+            script.setScriptText(lua);
+            script.setResultType(List.class);
+
+            @SuppressWarnings("unchecked")
+            List<String> admittedUsers = (List<String>) redisTemplate.execute(
+                    script,
+                    Arrays.asList(queueKey, admittedKey),
+                    String.valueOf(batchSize)
+            );
+
+            if (admittedUsers == null) {
+                admittedUsers = Collections.emptyList();
             }
-
-            List<String> admittedUsers = new ArrayList<>(usersToAdmit);
-
-            // Execute remove/add atomically in a Redis transaction
-            redisTemplate.execute((operations) -> {
-                operations.multi();
-                for (String userId : admittedUsers) {
-                    operations.opsForZSet().remove(queueKey, userId);
-                    operations.opsForSet().add(admittedKey, userId);
-                }
-                operations.exec();
-                return null;
-            });
 
             log.info("Admitted {} users from queue for event {}", admittedUsers.size(), eventId);
             return admittedUsers;
