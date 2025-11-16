@@ -25,17 +25,15 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                // --- THIS IS THE CORS FIX ---
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // --------------------------
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Allow ANYONE to GET events (browsing)
                         .requestMatchers(HttpMethod.GET, "/api/inventory/events/**").permitAll()
 
-                        // Allow authenticated users (like the booking-service) to reserve/release
-                        .requestMatchers(HttpMethod.POST, "/api/inventory/events/*/reserve").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/inventory/events/*/release").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/inventory/events/*/reserve").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/inventory/events/*/release").permitAll()
+                        // -----------------------
 
                         // ALL other methods (POST, DELETE, PUT) must be authenticated (admin)
                         .requestMatchers(HttpMethod.POST, "/api/inventory/events").authenticated()

@@ -3,6 +3,7 @@ package com.ticketsale.waiting_room_service.security; // <-- Correct package
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -30,7 +31,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Allow the 'health' endpoint to be public
-                        .requestMatchers("/api/waitingroom/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/waitingroom/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/waitingroom/position/**").permitAll()
                         // All other endpoints in the waiting room MUST be authenticated
                         .requestMatchers("/api/waitingroom/**").authenticated()
                         .anyRequest().permitAll()
