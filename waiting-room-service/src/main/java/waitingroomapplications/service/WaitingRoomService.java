@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import waitingroomapplications.dto.PositionInfo;
+import waitingroomapplications.dto.PositionStatus;
 import waitingroomapplications.dto.QueueStatusResponse;
 
 import java.util.*;
@@ -45,7 +47,7 @@ public class WaitingRoomService {
         }
     }
 
-    public Integer getPosition(String userId, Long eventId) {
+    public PositionInfo getPositionInfo(String userId, Long eventId) {
         try {
             String queueKey = QUEUE_KEY_PREFIX + eventId;
             Long rank = redisTemplate.opsForZSet().rank(queueKey, userId);
@@ -55,13 +57,22 @@ public class WaitingRoomService {
                 Boolean isAdmitted = redisTemplate.opsForSet().isMember(admittedKey, userId);
                 if (Boolean.TRUE.equals(isAdmitted)) {
                     log.info("User {} already admitted to event {}", userId, eventId);
-                    return 0;
+                    return PositionInfo.builder()
+                            .status(PositionStatus.ADMITTED)
+                            .position(0)
+                            .build();
                 }
                 log.warn("User {} not found in queue for event {}", userId, eventId);
-                return null;
+                return PositionInfo.builder()
+                        .status(PositionStatus.NOT_FOUND)
+                        .position(null)
+                        .build();
             }
 
-            return rank.intValue() + 1;
+            return PositionInfo.builder()
+                    .status(PositionStatus.IN_QUEUE)
+                    .position(rank.intValue() + 1)
+                    .build();
 
         } catch (Exception e) {
             log.error("Error getting position for user {}: ", userId, e);

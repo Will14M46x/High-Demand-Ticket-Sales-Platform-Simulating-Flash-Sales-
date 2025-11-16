@@ -69,17 +69,18 @@ public class WaitingRoomController {
         try {
             log.info("Getting position for user {} in event {}", userId, eventId);
 
-            Integer position = waitingRoomService.getPosition(userId, eventId);
+            waitingroomapplications.dto.PositionInfo info = waitingRoomService.getPositionInfo(userId, eventId);
 
-            if (position == null) {
+            if (info.getStatus() == waitingroomapplications.dto.PositionStatus.NOT_FOUND) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("error", "User not found in queue"));
             }
 
             QueuePositionResponse response = QueuePositionResponse.builder()
                     .userId(userId)
-                    .position(position)
-                    .estimatedWaitTime(waitingRoomService.estimateWaitForPositions(position))
+                    .position(info.getPosition())
+                    .estimatedWaitTime(waitingRoomService.estimateWaitForPositions(
+                            info.getPosition() == null ? 0 : info.getPosition()))
                     .build();
 
             return ResponseEntity.ok(response);
