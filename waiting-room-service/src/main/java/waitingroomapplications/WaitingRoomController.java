@@ -76,11 +76,14 @@ public class WaitingRoomController {
                         .body(Map.of("error", "User not found in queue"));
             }
 
+            String waitText = (info.getStatus() == waitingroomapplications.dto.PositionStatus.ADMITTED)
+                    ? "Admitted - ready to proceed"
+                    : waitingRoomService.estimateWaitForPositions(info.getPosition() == null ? 0 : info.getPosition());
+
             QueuePositionResponse response = QueuePositionResponse.builder()
                     .userId(userId)
                     .position(info.getPosition())
-                    .estimatedWaitTime(waitingRoomService.estimateWaitForPositions(
-                            info.getPosition() == null ? 0 : info.getPosition()))
+                    .estimatedWaitTime(waitText)
                     .build();
 
             return ResponseEntity.ok(response);
