@@ -25,9 +25,6 @@ public class WaitingRoomController {
 
     private final WaitingRoomService waitingRoomService;
 
-    @org.springframework.beans.factory.annotation.Value("${waiting-room.estimated-wait-per-user:30}")
-    private long estimatedWaitPerUserSeconds;
-
     @org.springframework.beans.factory.annotation.Value("${server.port}")
     private int serverPort;
 
