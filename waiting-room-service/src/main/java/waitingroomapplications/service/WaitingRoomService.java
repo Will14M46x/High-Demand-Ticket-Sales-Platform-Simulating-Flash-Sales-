@@ -177,4 +177,9 @@ public class WaitingRoomService {
         }
         return mins + "m " + secs + "s";
     }
+
+    public String estimateWaitForPositions(long positions) {
+        long seconds = positions * estimatedWaitPerUserSeconds;
+        return formatEstimatedWait(seconds);
+    }
 }

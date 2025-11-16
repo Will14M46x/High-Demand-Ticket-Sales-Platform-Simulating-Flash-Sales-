@@ -51,7 +51,7 @@ public class WaitingRoomController {
             QueuePositionResponse response = QueuePositionResponse.builder()
                     .userId(request.getUserId())
                     .position(position)
-                    .estimatedWaitTime((position * estimatedWaitPerUserSeconds) + " seconds")
+                    .estimatedWaitTime(waitingRoomService.estimateWaitForPositions(position))
                     .build();
 
             log.info("User {} added to queue at position {}", request.getUserId(), position);
@@ -79,7 +79,7 @@ public class WaitingRoomController {
             QueuePositionResponse response = QueuePositionResponse.builder()
                     .userId(userId)
                     .position(position)
-                    .estimatedWaitTime((position * estimatedWaitPerUserSeconds) + " seconds")
+                    .estimatedWaitTime(waitingRoomService.estimateWaitForPositions(position))
                     .build();
 
             return ResponseEntity.ok(response);
