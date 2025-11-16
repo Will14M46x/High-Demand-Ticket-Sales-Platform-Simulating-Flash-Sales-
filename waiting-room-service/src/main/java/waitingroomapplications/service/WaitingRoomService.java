@@ -144,7 +144,7 @@ public class WaitingRoomService {
 
         } catch (Exception e) {
             log.error("Error getting queue status for event {}: ", eventId, e);
-            throw new RuntimeException("Failed to get queue status", e);
+            throw new RuntimeException("Failed to get queue status for event " + eventId, e);
         }
     }
 
