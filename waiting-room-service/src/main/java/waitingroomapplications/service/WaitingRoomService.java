@@ -117,7 +117,7 @@ public class WaitingRoomService {
 
         } catch (Exception e) {
             log.error("Error admitting batch for event {}: ", eventId, e);
-            throw new RuntimeException("Failed to admit batch", e);
+            throw new RuntimeException(String.format("Failed to admit batch for eventId=%s with batchSize=%d", eventId, batchSize), e);
         }
     }
 
