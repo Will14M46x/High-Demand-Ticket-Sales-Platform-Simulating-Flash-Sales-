@@ -164,7 +164,7 @@ public class WaitingRoomService {
 
         } catch (Exception e) {
             log.error("Error removing user {} from queue: ", userId, e);
-            throw new RuntimeException("Failed to remove user", e);
+            throw new RuntimeException("Failed to remove user with userId: " + userId + " from eventId: " + eventId, e);
         }
     }
 
