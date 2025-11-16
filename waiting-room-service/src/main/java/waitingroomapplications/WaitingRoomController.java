@@ -39,7 +39,7 @@ public class WaitingRoomController {
             QueuePositionResponse response = QueuePositionResponse.builder()
                     .userId(request.getUserId())
                     .position(position)
-                    .estimatedWaitTime((position * 30L) + " seconds")
+                    .estimatedWaitTime((position * waitingroomapplications.service.WaitingRoomService.ESTIMATED_WAIT_PER_USER_SECONDS) + " seconds")
                     .build();
 
             log.info("User {} added to queue at position {}", request.getUserId(), position);
@@ -67,7 +67,7 @@ public class WaitingRoomController {
             QueuePositionResponse response = QueuePositionResponse.builder()
                     .userId(userId)
                     .position(position)
-                    .estimatedWaitTime((position * 30L) + " seconds")
+                    .estimatedWaitTime((position * waitingroomapplications.service.WaitingRoomService.ESTIMATED_WAIT_PER_USER_SECONDS) + " seconds")
                     .build();
 
             return ResponseEntity.ok(response);
@@ -142,13 +142,19 @@ public class WaitingRoomController {
     }
 
     @GetMapping("/health")
-    public ResponseEntity<?> healthCheck() {
+    public ResponseEntity<?> healthCheck(@org.springframework.beans.factory.annotation.Value("${server.port}") int serverPort,
+                                         @org.springframework.beans.factory.annotation.Value("${spring.data.redis.host}") String redisHost,
+                                         @org.springframework.beans.factory.annotation.Value("${spring.data.redis.port}") int redisPort) {
         try {
             log.info("Health check requested");
 
             Map<String, Object> health = waitingRoomService.checkHealth();
 
-            if ((Boolean) health.get("redisConnected")) {
+            // Enrich with runtime config details
+            health.put("port", serverPort);
+            health.put("redis", redisHost + ":" + redisPort);
+
+            if (Boolean.TRUE.equals(health.get("redisConnected"))) {
                 return ResponseEntity.ok(health);
             } else {
                 return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(health);

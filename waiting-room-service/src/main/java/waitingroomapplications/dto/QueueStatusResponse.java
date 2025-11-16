@@ -8,6 +8,5 @@ import lombok.Data;
 public class QueueStatusResponse {
     private Long totalWaiting;
     private Long totalAdmitted;
-    private Long queueLength;
     private String estimatedWaitTime;
 }

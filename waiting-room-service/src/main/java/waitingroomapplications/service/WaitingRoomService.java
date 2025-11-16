@@ -15,6 +15,7 @@ public class WaitingRoomService {
 
     private static final String QUEUE_KEY_PREFIX = "waitingroom:queue:";
     private static final String ADMITTED_KEY_PREFIX = "waitingroom:admitted:";
+    public static final long ESTIMATED_WAIT_PER_USER_SECONDS = 30L;
 
     private final RedisTemplate<String, String> redisTemplate;
 
@@ -72,10 +73,17 @@ public class WaitingRoomService {
             }
 
             List<String> admittedUsers = new ArrayList<>(usersToAdmit);
-            for (String userId : admittedUsers) {
-                redisTemplate.opsForZSet().remove(queueKey, userId);
-                redisTemplate.opsForSet().add(admittedKey, userId);
-            }
+
+            // Execute remove/add atomically in a Redis transaction
+            redisTemplate.execute((operations) -> {
+                operations.multi();
+                for (String userId : admittedUsers) {
+                    operations.opsForZSet().remove(queueKey, userId);
+                    operations.opsForSet().add(admittedKey, userId);
+                }
+                operations.exec();
+                return null;
+            });
 
             log.info("Admitted {} users from queue for event {}", admittedUsers.size(), eventId);
             return admittedUsers;
@@ -94,12 +102,11 @@ public class WaitingRoomService {
             long waiting = Optional.ofNullable(redisTemplate.opsForZSet().size(queueKey)).orElse(0L);
             long admitted = Optional.ofNullable(redisTemplate.opsForSet().size(admittedKey)).orElse(0L);
 
-            String estimatedWait = (waiting * 30L) + " seconds";
+            String estimatedWait = (waiting * ESTIMATED_WAIT_PER_USER_SECONDS) + " seconds";
 
             QueueStatusResponse response = QueueStatusResponse.builder()
                     .totalWaiting(waiting)
                     .totalAdmitted(admitted)
-                    .queueLength(waiting)
                     .estimatedWaitTime(estimatedWait)
                     .build();
 
@@ -143,8 +150,7 @@ public class WaitingRoomService {
             health.put("status", isConnected ? "UP" : "DOWN");
             health.put("redisConnected", isConnected);
             health.put("service", "waiting-room-service");
-            health.put("port", 8085);
-            health.put("redis", "localhost:6379");
+            // Port and redis host:port should be populated by controller using config, not hardcoded here
             health.put("timestamp", System.currentTimeMillis());
 
             log.info("Health check: Redis connection {}", isConnected ? "UP" : "DOWN");
