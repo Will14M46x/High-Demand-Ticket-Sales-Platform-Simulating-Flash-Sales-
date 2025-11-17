@@ -1,0 +1,211 @@
+package waitingroomapplications.service;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.stereotype.Service;
+import waitingroomapplications.dto.PositionInfo;
+import waitingroomapplications.dto.PositionStatus;
+import waitingroomapplications.dto.QueueStatusResponse;
+
+import java.util.*;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class WaitingRoomService {
+
+    private static final String QUEUE_KEY_PREFIX = "waitingroom:queue:";
+    private static final String ADMITTED_KEY_PREFIX = "waitingroom:admitted:";
+    @org.springframework.beans.factory.annotation.Value("${waiting-room.estimated-wait-per-user:30}")
+    private long estimatedWaitPerUserSeconds;
+
+    private final RedisTemplate<String, String> redisTemplate;
+
+    public Integer joinQueue(String userId, Long eventId, Integer quantity) {
+        try {
+            String queueKey = QUEUE_KEY_PREFIX + eventId;
+
+            // Prevent duplicate re-joins from changing position: return existing rank if present
+            Long existingRank = redisTemplate.opsForZSet().rank(queueKey, userId);
+            if (existingRank != null) {
+                log.info("User {} already in queue {} at position {}", userId, eventId, existingRank);
+                return existingRank.intValue() + 1;
+            }
+
+            // Use high-resolution timestamp to minimize equal-score collisions for simultaneous joins
+            double score = (double) System.nanoTime();
+            redisTemplate.opsForZSet().add(queueKey, userId, score);
+
+            Long rank = redisTemplate.opsForZSet().rank(queueKey, userId);
+            log.info("User {} joined queue {} at position {}", userId, eventId, rank);
+
+            return rank != null ? rank.intValue() + 1 : 1;
+
+        } catch (Exception e) {
+            log.error("Error joining queue for user {}: ", userId, e);
+            throw new RuntimeException("Failed to join queue for user " + userId + " and event " + eventId, e);
+        }
+    }
+
+    public PositionInfo getPositionInfo(String userId, Long eventId) {
+        try {
+            String queueKey = QUEUE_KEY_PREFIX + eventId;
+            Long rank = redisTemplate.opsForZSet().rank(queueKey, userId);
+
+            if (rank == null) {
+                String admittedKey = ADMITTED_KEY_PREFIX + eventId;
+                Boolean isAdmitted = redisTemplate.opsForSet().isMember(admittedKey, userId);
+                if (Boolean.TRUE.equals(isAdmitted)) {
+                    log.info("User {} already admitted to event {}", userId, eventId);
+                    return PositionInfo.builder()
+                            .status(PositionStatus.ADMITTED)
+                            .position(0)
+                            .build();
+                }
+                log.warn("User {} not found in queue for event {}", userId, eventId);
+                return PositionInfo.builder()
+                        .status(PositionStatus.NOT_FOUND)
+                        .position(null)
+                        .build();
+            }
+
+            return PositionInfo.builder()
+                    .status(PositionStatus.IN_QUEUE)
+                    .position(rank.intValue() + 1)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Error getting position for user {}: ", userId, e);
+            throw new RuntimeException("Failed to get position for user " + userId + " and event " + eventId, e);
+        }
+    }
+
+    public List<String> admitBatch(Integer batchSize, Long eventId) {
+        try {
+            String queueKey = QUEUE_KEY_PREFIX + eventId;
+            String admittedKey = ADMITTED_KEY_PREFIX + eventId;
+
+            // Atomically fetch first N users from ZSET, remove them from queue, and add to admitted set
+            String lua =
+                    "local users = redis.call('ZRANGE', KEYS[1], 0, tonumber(ARGV[1]) - 1)\n" +
+                    "if (#users == 0) then return users end\n" +
+                    "for i, u in ipairs(users) do\n" +
+                    "  redis.call('ZREM', KEYS[1], u)\n" +
+                    "  redis.call('SADD', KEYS[2], u)\n" +
+                    "end\n" +
+                    "return users\n";
+
+            DefaultRedisScript<List> script = new DefaultRedisScript<>();
+            script.setScriptText(lua);
+            script.setResultType(List.class);
+
+            @SuppressWarnings("unchecked")
+            List<String> admittedUsers = (List<String>) redisTemplate.execute(
+                    script,
+                    Arrays.asList(queueKey, admittedKey),
+                    String.valueOf(batchSize)
+            );
+
+            if (admittedUsers == null) {
+                admittedUsers = Collections.emptyList();
+            }
+
+            log.info("Admitted {} users from queue for event {}", admittedUsers.size(), eventId);
+            return admittedUsers;
+
+        } catch (Exception e) {
+            log.error("Error admitting batch for event {}: ", eventId, e);
+            throw new RuntimeException(String.format("Failed to admit batch for eventId=%s with batchSize=%d", eventId, batchSize), e);
+        }
+    }
+
+    public QueueStatusResponse getQueueStatus(Long eventId) {
+        try {
+            String queueKey = QUEUE_KEY_PREFIX + eventId;
+            String admittedKey = ADMITTED_KEY_PREFIX + eventId;
+
+            long waiting = Optional.ofNullable(redisTemplate.opsForZSet().size(queueKey)).orElse(0L);
+            long admitted = Optional.ofNullable(redisTemplate.opsForSet().size(admittedKey)).orElse(0L);
+
+            String estimatedWait = formatEstimatedWait(waiting * estimatedWaitPerUserSeconds);
+
+            QueueStatusResponse response = QueueStatusResponse.builder()
+                    .totalWaiting(waiting)
+                    .totalAdmitted(admitted)
+                    .estimatedWaitTime(estimatedWait)
+                    .build();
+
+            log.info("Queue status for event {}: {} waiting, {} admitted, estimated wait {}",
+                    eventId, waiting, admitted, estimatedWait);
+
+            return response;
+
+        } catch (Exception e) {
+            log.error("Error getting queue status for event {}: ", eventId, e);
+            throw new RuntimeException("Failed to get queue status for event " + eventId, e);
+        }
+    }
+
+    public boolean removeUser(String userId, Long eventId) {
+        try {
+            String queueKey = QUEUE_KEY_PREFIX + eventId;
+            Long removed = redisTemplate.opsForZSet().remove(queueKey, userId);
+            boolean wasRemoved = removed != null && removed > 0;
+
+            if (wasRemoved) {
+                log.info("User {} removed from queue for event {}", userId, eventId);
+            } else {
+                log.warn("User {} not found in queue for event {}", userId, eventId);
+            }
+
+            return wasRemoved;
+
+        } catch (Exception e) {
+            log.error("Error removing user {} from queue: ", userId, e);
+            throw new RuntimeException("Failed to remove user with userId: " + userId + " from eventId: " + eventId, e);
+        }
+    }
+
+    public Map<String, Object> checkHealth() {
+        Map<String, Object> health = new HashMap<>();
+        try {
+            String pong = redisTemplate.execute(connection -> connection.ping());
+            boolean isConnected = "PONG".equalsIgnoreCase(pong);
+
+            health.put("status", isConnected ? "UP" : "DOWN");
+            health.put("redisConnected", isConnected);
+            health.put("service", "waiting-room-service");
+            // Port and redis host:port should be populated by controller using config, not hardcoded here
+            health.put("timestamp", System.currentTimeMillis());
+
+            log.info("Health check: Redis connection {}", isConnected ? "UP" : "DOWN");
+
+        } catch (Exception e) {
+            log.error("Health check failed: ", e);
+            health.put("status", "DOWN");
+            health.put("redisConnected", false);
+            health.put("error", e.getMessage());
+        }
+
+        return health;
+    }
+
+    private String formatEstimatedWait(long seconds) {
+        if (seconds < 60) {
+            return seconds + " seconds";
+        }
+        long mins = seconds / 60;
+        long secs = seconds % 60;
+        if (secs == 0) {
+            return mins + " minutes";
+        }
+        return mins + "m " + secs + "s";
+    }
+
+    public String estimateWaitForPositions(long positions) {
+        long seconds = positions * estimatedWaitPerUserSeconds;
+        return formatEstimatedWait(seconds);
+    }
+}
