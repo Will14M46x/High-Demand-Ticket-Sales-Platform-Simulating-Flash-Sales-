@@ -32,7 +32,7 @@ public class SecurityConfig {
     @Value("${cors.allowed-headers:*}")
     private String allowedHeaders;
     
-    @Value("${cors.allow-credentials:false}")
+    @Value("${cors.allow-credentials:true}")
     private boolean allowCredentials;
     
     @Value("${cors.max-age:3600}")
@@ -49,8 +49,12 @@ public class SecurityConfig {
                     "/api/auth/signup",
                     "/api/auth/login",
                     "/api/auth/verify-firebase-token",
+                    "/api/auth/refresh-token",
+                    "/api/auth/logout",
                     "/api/auth/health",
-                    "/api/auth/validate-token"
+                    "/api/auth/validate-token",
+                    "/api/auth/rate-limit/**",
+                    "/h2-console/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

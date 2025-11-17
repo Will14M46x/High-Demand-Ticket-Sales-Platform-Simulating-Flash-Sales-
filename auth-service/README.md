@@ -461,8 +461,8 @@ All sensitive configuration is externalized via environment variables. See `env.
 
 ```properties
 # JWT Configuration
-# Reads from JWT_SECRET env var, falls back to INSECURE value for local dev
-jwt.secret=${JWT_SECRET:INSECURE-LOCAL-DEV-SECRET-CHANGE-ME...}
+# Reads from JWT_SECRET env var (required)
+jwt.secret=${JWT_SECRET}
 jwt.expiration=${JWT_EXPIRATION:86400000}
 
 # Firebase Configuration
