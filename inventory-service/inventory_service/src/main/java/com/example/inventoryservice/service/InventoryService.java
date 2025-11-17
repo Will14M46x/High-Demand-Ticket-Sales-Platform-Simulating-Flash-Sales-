@@ -20,8 +20,17 @@ public class InventoryService {
         if (event == null || event.getAvailableTickets() < quantity) {
             return null;
         }
-
         event.setAvailableTickets(event.getAvailableTickets() - quantity);
+        return eventRepository.save(event);
+    }
+
+    @Transactional
+    public synchronized Event releaseTickets(Long eventId, int quantity) {
+        Event event = eventRepository.findById(eventId).orElse(null);
+        if (event == null) {
+            return null;
+        }
+        event.setAvailableTickets(event.getAvailableTickets() + quantity);
         return eventRepository.save(event);
     }
 }
