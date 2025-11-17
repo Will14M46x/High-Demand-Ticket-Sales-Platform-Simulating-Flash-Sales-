@@ -1,0 +1,35 @@
+server:
+  # Run this service on a new port
+  port: 8086
+
+spring:
+  application:
+    name: booking-service
+
+  # --- 1. Order DB (MySQL) Connection ---
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/order_db}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # --- 2. Real-Time Data Store (Redis) Connection ---
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  # --- JPA/Hibernate Configuration ---
+  jpa:
+    hibernate:
+      # 'none' because we created the table in Workbench
+      ddl-auto: none
+    open-in-view: false
+    show-sql: true
+
+# --- Custom Configuration ---
+# This is the URL for the inventory-service API we already built
+# We make it a property so it's easy to change later
+inventory:
+  service:
+    url: "${INVENTORY_SERVICE_URL:http://localhost:8081}"

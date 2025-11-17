@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/events")
+@RequestMapping("/api/inventory/events")
 @CrossOrigin(origins = "*")
 public class EventController {
     
@@ -23,23 +23,16 @@ public class EventController {
 
     private final InventoryService inventoryService;
 
+    @Autowired
+    private EventRepository eventRepository;
+
     public EventController(InventoryService inventoryService) {
         this.inventoryService = inventoryService;
     }
 
-    @Autowired
-    private EventRepository eventRepository;
-    
-    /**
-     * Health check endpoint
-     */
-    @GetMapping("/health")
-    public ResponseEntity<Map<String, String>> health() {
-        Map<String, String> response = new HashMap<>();
-        response.put("status", "UP");
-        response.put("service", "inventory-service");
-        return ResponseEntity.ok(response);
-    }
+    // -------------------------------
+    // CRUD ENDPOINTS FOR EVENTS
+    // -------------------------------
 
     @GetMapping
     public List<Event> getAllEvents() {
@@ -138,8 +131,13 @@ public class EventController {
         return ResponseEntity.ok(updated);
     }
 
+    // -------------------------------
+    // HEALTH CHECK
+    // -------------------------------
 
-
+    @GetMapping("/health")
+    public String healthCheck() {
+        return "Inventory service is running!";
+                }
 
 }
-
