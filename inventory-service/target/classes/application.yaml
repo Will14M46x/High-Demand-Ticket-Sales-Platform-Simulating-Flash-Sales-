@@ -1,0 +1,28 @@
+# --- Inventory Service Configuration ---
+
+server:
+  # Port set to 8085
+  port: 8085
+
+spring:
+  application:
+    name: inventory-service
+
+  # --- Database Connection (from Docker setup) ---
+  datasource:
+    url: jdbc:mysql://localhost:3306/inventory_db
+    username: root
+    password: Slow_bo@t2004
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # --- JPA/Hibernate Configuration ---
+  jpa:
+    hibernate:
+      # We use 'none' because we created the tables manually
+      ddl-auto: none
+    open-in-view: false
+    show-sql: true
+
+jwt:
+  secret: 7K9mP2nQ5tU8wB1dF4gH6jI0kM3nO7pR9sT2uV5xY8zA1cE4fG7hJ0kL3mN6oP9r
+  expiration: 86400000
