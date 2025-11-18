@@ -45,10 +45,10 @@ public class AuthService {
     private LoginHistoryService loginHistoryService;
     
     @Value("${firebase.enabled:true}")
-    private boolean firebaseEnabled;
+    public boolean firebaseEnabled;
     
     @Value("${jwt.expiration:86400000}")
-    private Long jwtExpiration;
+    public Long jwtExpiration;
     
     @Transactional
     public AuthResponse signup(SignupRequest request, String ipAddress, String userAgent) {
