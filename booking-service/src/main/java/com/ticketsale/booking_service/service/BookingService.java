@@ -30,14 +30,14 @@ public class BookingService {
     @Autowired
     private StringRedisTemplate redisTemplate;
     @Value("${inventory.service.url}")
-    private String inventoryServiceUrl;
+    public String inventoryServiceUrl;
     @Value("${waitingroom.service.url}")
-    private String waitingRoomServiceUrl;
+    public String waitingRoomServiceUrl;
 
     private static final Duration HOLD_DURATION = Duration.ofMinutes(5);
 
 
-    private boolean isUserAdmitted(String userId, Long eventId) {
+    public boolean isUserAdmitted(String userId, Long eventId) {
         String checkPositionUrl = String.format(
                 "%s/position/%s?eventId=%d",
                 waitingRoomServiceUrl,
