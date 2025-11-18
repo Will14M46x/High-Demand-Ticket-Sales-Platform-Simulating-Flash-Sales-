@@ -1,0 +1,19 @@
+server:
+  # New port for this service
+  port: 8087
+
+spring:
+  application:
+    name: waiting-room-service
+
+  # --- Redis Connection ---
+  # This points to the same Redis in Docker
+  # that our booking-service uses.
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+jwt:
+  secret: 7K9mP2nQ5tU8wB1dF4gH6jI0kM3nO7pR9sT2uV5xY8zA1cE4fG7hJ0kL3mN6oP9r
+  expiration: 86400000
