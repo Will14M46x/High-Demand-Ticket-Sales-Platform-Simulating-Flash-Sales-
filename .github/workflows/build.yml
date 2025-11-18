@@ -2,7 +2,7 @@ name: Java CI Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "raidsNewBranch" ]
   pull_request:
     branches: [ "main" ]
 
