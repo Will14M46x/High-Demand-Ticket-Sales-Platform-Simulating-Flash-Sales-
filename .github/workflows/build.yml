@@ -1,0 +1,36 @@
+name: Java CI Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # We use -DskipTests to ensure it builds even if they haven't set up a MySQL service in the pipeline yet.
+
+      - name: Build Auth Service
+        run: mvn -B package --file auth-service/pom.xml -DskipTests
+
+      - name: Build Inventory Service
+        run: mvn -B package --file inventory-service/pom.xml -DskipTests
+
+      - name: Build Booking Service
+        run: mvn -B package --file booking-service/pom.xml -DskipTests
+
+      - name: Build Waiting Room Service
+        run: mvn -B package --file waiting-room-service/pom.xml -DskipTests
