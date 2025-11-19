@@ -2,6 +2,7 @@ package com.ticketbooking.authservice.controller;
 
 import com.ticketbooking.authservice.dto.*;
 import com.ticketbooking.authservice.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,16 +25,36 @@ public class AuthController {
     private AuthService authService;
     
     @PostMapping("/signup")
-    public ResponseEntity<AuthResponse> signup(@Valid @RequestBody SignupRequest request) {
+    public ResponseEntity<AuthResponse> signup(
+            @Valid @RequestBody SignupRequest request,
+            HttpServletRequest httpRequest) {
         logger.info("POST /api/auth/signup - Email: {}", request.getEmail());
-        AuthResponse response = authService.signup(request);
+        
+        // Extract IP address and user agent from request
+        String ipAddress = getClientIpAddress(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+        if (userAgent == null || userAgent.isEmpty()) {
+            userAgent = "Unknown";
+        }
+        
+        AuthResponse response = authService.signup(request, ipAddress, userAgent);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
         logger.info("POST /api/auth/login - Email: {}", request.getEmail());
-        AuthResponse response = authService.login(request);
+        
+        // Extract IP address and user agent from request
+        String ipAddress = getClientIpAddress(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+        if (userAgent == null || userAgent.isEmpty()) {
+            userAgent = "Unknown";
+        }
+        
+        AuthResponse response = authService.login(request, ipAddress, userAgent);
         return ResponseEntity.ok(response);
     }
     
@@ -74,6 +95,25 @@ public class AuthController {
         response.put("status", "UP");
         response.put("service", "auth-service");
         return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Extract client IP address from HttpServletRequest
+     * Handles X-Forwarded-For header for proxies/load balancers
+     */
+    private String getClientIpAddress(HttpServletRequest request) {
+        String ipAddress = request.getHeader("X-Forwarded-For");
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("X-Real-IP");
+        }
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getRemoteAddr();
+        }
+        // X-Forwarded-For can contain multiple IPs, take the first one
+        if (ipAddress != null && ipAddress.contains(",")) {
+            ipAddress = ipAddress.split(",")[0].trim();
+        }
+        return ipAddress != null ? ipAddress : "unknown";
     }
 }
 

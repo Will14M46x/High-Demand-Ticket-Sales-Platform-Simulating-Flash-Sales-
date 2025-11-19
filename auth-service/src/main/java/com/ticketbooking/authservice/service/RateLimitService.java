@@ -10,8 +10,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -21,7 +19,7 @@ public class RateLimitService {
     private static final String LOCKOUT_PREFIX = "lockout:";
     private static final String ATTEMPT_PREFIX = "attempt:";
     
-    @Autowired
+    @Autowired(required = false)
     private RedisTemplate<String, String> redisTemplate;
     
     @Autowired
@@ -43,7 +41,7 @@ public class RateLimitService {
      * Check if an email is currently locked out
      */
     public boolean isLockedOut(String email) {
-        if (!rateLimitEnabled) {
+        if (!rateLimitEnabled || redisTemplate == null) {
             return false;
         }
         
@@ -56,7 +54,7 @@ public class RateLimitService {
      * Get remaining lockout time in seconds
      */
     public Long getRemainingLockoutTime(String email) {
-        if (!rateLimitEnabled) {
+        if (!rateLimitEnabled || redisTemplate == null) {
             return 0L;
         }
         
@@ -68,7 +66,7 @@ public class RateLimitService {
      * Get number of failed attempts for an email
      */
     public int getFailedAttemptCount(String email) {
-        if (!rateLimitEnabled) {
+        if (!rateLimitEnabled || redisTemplate == null) {
             return 0;
         }
         
@@ -90,7 +88,7 @@ public class RateLimitService {
      */
     @Transactional
     public void recordFailedAttempt(String email, String ipAddress, String userAgent, String failureReason) {
-        if (!rateLimitEnabled) {
+        if (!rateLimitEnabled || redisTemplate == null) {
             logger.debug("Rate limiting disabled, skipping failed attempt recording");
             return;
         }
@@ -142,7 +140,9 @@ public class RateLimitService {
         loginAttemptRepository.save(attempt);
         
         // Clear failed attempts counter
-        clearFailedAttempts(email);
+        if (redisTemplate != null) {
+            clearFailedAttempts(email);
+        }
         
         logger.debug("Successful login recorded for email: {}", email);
     }
@@ -160,6 +160,10 @@ public class RateLimitService {
      * Manually unlock an account (admin function)
      */
     public void unlockAccount(String email) {
+        if (redisTemplate == null) {
+            logger.warn("Redis not available, cannot unlock account: {}", email);
+            return;
+        }
         String lockoutKey = LOCKOUT_PREFIX + email;
         redisTemplate.delete(lockoutKey);
         clearFailedAttempts(email);
@@ -170,6 +174,9 @@ public class RateLimitService {
      * Clear failed attempts counter
      */
     private void clearFailedAttempts(String email) {
+        if (redisTemplate == null) {
+            return;
+        }
         String attemptKey = ATTEMPT_PREFIX + email;
         redisTemplate.delete(attemptKey);
     }

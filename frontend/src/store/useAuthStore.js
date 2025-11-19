@@ -33,7 +33,28 @@ const useAuthStore = create((set) => ({
           })
           return response
         } catch (error) {
-          set({ error: error.response?.data?.message || 'Signup failed', loading: false })
+          console.error('Signup error details:', error)
+          
+          // Extract detailed error message
+          let errorMessage = 'Signup failed'
+          
+          if (error.response?.data) {
+            if (typeof error.response.data === 'string') {
+              errorMessage = error.response.data
+            } else if (error.response.data.message) {
+              errorMessage = error.response.data.message
+            } else if (error.response.data.error) {
+              errorMessage = error.response.data.error
+            }
+          } else if (error.message) {
+            if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
+              errorMessage = 'Cannot connect to server. Please make sure the Auth Service is running on port 8081.'
+            } else {
+              errorMessage = error.message
+            }
+          }
+          
+          set({ error: errorMessage, loading: false })
           throw error
         }
       },

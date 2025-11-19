@@ -1,8 +1,8 @@
 # --- Inventory Service Configuration ---
 
 server:
-  # Port set to 8085
-  port: 8085
+  # Port set to 8082
+  port: 8082
 
 spring:
   application:

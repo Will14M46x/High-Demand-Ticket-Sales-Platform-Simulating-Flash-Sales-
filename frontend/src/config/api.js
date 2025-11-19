@@ -1,9 +1,9 @@
 // This file is now corrected to match our backend ports and paths
 export const API_BASE_URLS = {
-    AUTH: 'http://localhost:8081/api/auth', // This was correct
-    INVENTORY: 'http://localhost:8085/api/inventory/events', // Corrected port 8085 and path
-    WAITING_ROOM: 'http://localhost:8087/api/waitingroom', // Corrected port 8087
-    BOOKING: 'http://localhost:8086/api/booking', // Corrected port 8086
+    AUTH: 'http://localhost:8081/api/auth',
+    INVENTORY: 'http://localhost:8082/api/inventory/events',
+    WAITING_ROOM: 'http://localhost:8083/waiting-room',
+    BOOKING: 'http://localhost:8084/api/bookings',
     PAYMENT: 'http://localhost:8085/api/payments' // This is a mock, but we'll leave it
 }
 

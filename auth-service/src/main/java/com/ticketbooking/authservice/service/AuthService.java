@@ -139,11 +139,13 @@ public class AuthService {
         }
         
         // Find user in database
+        // Use InvalidCredentialsException instead of UserNotFoundException to prevent user enumeration
         User user = userRepository.findByEmail(request.getEmail())
             .orElseThrow(() -> {
                 // Record failed attempt even if user doesn't exist (to prevent user enumeration attacks)
                 rateLimitService.recordFailedAttempt(request.getEmail(), ipAddress, userAgent, "User not found");
-                return new UserNotFoundException("Invalid email or password");
+                // Return 401 (Unauthorized) instead of 404 (Not Found) to hide whether user exists
+                return new InvalidCredentialsException("Invalid email or password");
             });
         
         if (!user.getIsActive()) {

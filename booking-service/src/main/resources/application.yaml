@@ -1,6 +1,6 @@
 server:
-  # Run this service on a new port
-  port: 8086
+  # Run this service on port 8084
+  port: 8084
 
 spring:
   application:
